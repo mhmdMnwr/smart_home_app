@@ -40,19 +40,100 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  void setDevicePower({required String deviceKey, required bool isOn}) {
+  /// Controls device power via MQTT (fire and forget)
+  /// 
+  /// Does not wait for response - sends command immediately and returns
+  /// Updates to device state will be reflected on next loadDevicesStatus call
+  void setDevicePower({
+    required String deviceKey,
+    required bool isOn,
+  }) {
     final currentDevices = state.devices;
     if (currentDevices == null) {
+      emit(state.copyWith(errorMessage: 'Devices not loaded'));
       return;
     }
 
+    final device = currentDevices.deviceByKey(deviceKey);
+    if (deviceKey == 'alarm') {
+      if (!device.isOnline) {
+        emit(
+          state.copyWith(
+            errorMessage: 'Alarm is already off. You can switch only when it is on.',
+          ),
+        );
+        return;
+      }
+
+      if (isOn) {
+        emit(
+          state.copyWith(
+            errorMessage: 'Alarm can only be switched off via the app.',
+          ),
+        );
+        return;
+      }
+    }
+
+    // Emit optimistic update
+    final optimisticDevices = currentDevices.updateDeviceStatus(
+      deviceKey: deviceKey,
+      isOn: isOn,
+    );
     emit(
       state.copyWith(
-        devices: currentDevices.updateDeviceStatus(
-          deviceKey: deviceKey,
-          isOn: isOn,
-        ),
+        devices: optimisticDevices,
+        errorMessage: null,
       ),
     );
+
+    // Fire and forget - send command without waiting
+    _homeRepository.setDevicePower(
+      deviceKey: deviceKey,
+      isOn: isOn,
+    );
+  }
+
+  Future<bool> openDoor({required String password}) async {
+    final normalizedPassword = password.trim();
+    if (normalizedPassword.isEmpty) {
+      emit(state.copyWith(errorMessage: 'Door password is required.'));
+      return false;
+    }
+
+    try {
+      await _homeRepository.openDoor(password: normalizedPassword);
+      emit(state.copyWith(errorMessage: null));
+      return true;
+    } on AppException catch (error) {
+      emit(state.copyWith(errorMessage: error.message));
+      return false;
+    } catch (_) {
+      emit(state.copyWith(errorMessage: AppStrings.genericError));
+      return false;
+    }
+  }
+
+  Future<bool> setFanTempThreshold({required int value}) async {
+    if (value < 0 || value > 100) {
+      emit(
+        state.copyWith(
+          errorMessage: 'Temperature threshold must be between 0 and 100.',
+        ),
+      );
+      return false;
+    }
+
+    try {
+      await _homeRepository.setFanTempThreshold(value: value);
+      emit(state.copyWith(errorMessage: null));
+      return true;
+    } on AppException catch (error) {
+      emit(state.copyWith(errorMessage: error.message));
+      return false;
+    } catch (_) {
+      emit(state.copyWith(errorMessage: AppStrings.genericError));
+      return false;
+    }
   }
 }

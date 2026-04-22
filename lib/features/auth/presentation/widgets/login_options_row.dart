@@ -14,6 +14,8 @@ class LoginOptionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: <Widget>[
         Expanded(
@@ -24,10 +26,13 @@ class LoginOptionsRow extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 onChanged: onRememberChanged,
               ),
-              const Flexible(
+              Flexible(
                 child: Text(
                   LoginStrings.rememberMe,
-                  style: TextStyle(fontSize: 12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -40,9 +45,12 @@ class LoginOptionsRow extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             padding: const EdgeInsets.symmetric(horizontal: 4),
           ),
-          child: const Text(
+          child: Text(
             LoginStrings.forgotPassword,
-            style: TextStyle(fontSize: 12),
+            style: TextStyle(
+              fontSize: 12,
+              color: colorScheme.primary,
+            ),
           ),
         ),
       ],

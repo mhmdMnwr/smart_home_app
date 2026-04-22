@@ -1,7 +1,7 @@
 class LoginStrings {
   const LoginStrings._();
 
-  static const String title = 'your\nsmart home';
+  static const String title = 'Smart Space';
   static const String subtitle = 'Welcome back! Please login to continue';
 
   static const String emailLabel = 'Email Address';

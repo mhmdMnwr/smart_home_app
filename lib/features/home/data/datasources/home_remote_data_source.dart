@@ -1,33 +1,71 @@
 import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/mqtt_client.dart';
 import '../models/device_status_model.dart';
 
 abstract class HomeRemoteDataSource {
   Future<HomeDevicesStatusModel> getDevicesStatus();
+
+  Future<void> setDevicePower({
+    required String deviceKey,
+    required bool isOn,
+  });
+
+  Future<void> openDoor({required String password});
+
+  Future<void> setFanTempThreshold({required int value});
 }
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
-  HomeRemoteDataSourceImpl({required ApiClient apiClient})
-    : _apiClient = apiClient;
+  HomeRemoteDataSourceImpl({
+    required ApiClient apiClient,
+    required MqttClient mqttClient,
+  })  : _apiClient = apiClient,
+        _mqttClient = mqttClient;
 
   final ApiClient _apiClient;
+  final MqttClient _mqttClient;
 
   @override
   Future<HomeDevicesStatusModel> getDevicesStatus() async {
-    try {
-      final response = await _apiClient.get(path: AppConfig.devicesPath);
-      return _mapDevicesResponse(response);
-    } on AppException catch (error) {
-      if (error.statusCode != 404) {
-        rethrow;
-      }
+    final response = await _apiClient.get(path: AppConfig.devicesStatusPath);
+    return _mapDevicesResponse(response);
+  }
 
-      final fallbackResponse = await _apiClient.get(
-        path: AppConfig.statusDevicesPath,
-      );
-      return _mapDevicesResponse(fallbackResponse);
+  @override
+  Future<void> setDevicePower({
+    required String deviceKey,
+    required bool isOn,
+  }) async {
+    switch (deviceKey) {
+      case 'lamp1':
+      case 'lamp2':
+        return _mqttClient.setLampPower(
+          lampId: deviceKey,
+          isOn: isOn,
+        );
+      case 'fan1':
+      case 'fan2':
+        return _mqttClient.setFanPower(
+          fanId: deviceKey,
+          isOn: isOn,
+        );
+      case 'alarm':
+        return _mqttClient.setAlarm(isOn: isOn);
+      default:
+        throw AppException(message: 'Unknown device: $deviceKey');
     }
+  }
+
+  @override
+  Future<void> openDoor({required String password}) {
+    return _mqttClient.openDoor(password: password);
+  }
+
+  @override
+  Future<void> setFanTempThreshold({required int value}) {
+    return _mqttClient.setTempThreshold(value: value);
   }
 
   HomeDevicesStatusModel _mapDevicesResponse(Map<String, dynamic> response) {

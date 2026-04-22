@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/device_status_model.dart';
+import '../constants/home_strings.dart';
 
 class DeviceControlSheet extends StatelessWidget {
   const DeviceControlSheet({
@@ -13,6 +14,9 @@ class DeviceControlSheet extends StatelessWidget {
     required this.secondKey,
     required this.secondStatus,
     required this.onToggle,
+    this.showThresholdControl = false,
+    this.initialThreshold = 28,
+    this.onSetThreshold,
   });
 
   final String title;
@@ -23,6 +27,9 @@ class DeviceControlSheet extends StatelessWidget {
   final String secondKey;
   final DeviceStatusModel secondStatus;
   final void Function(String deviceKey, bool isOn) onToggle;
+  final bool showThresholdControl;
+  final int initialThreshold;
+  final Future<bool> Function(int value)? onSetThreshold;
 
   @override
   Widget build(BuildContext context) {
@@ -43,16 +50,154 @@ class DeviceControlSheet extends StatelessWidget {
             const SizedBox(height: 16),
             _DeviceControlRow(
               label: firstLabel,
-              status: firstStatus.displayStatus,
+              isOnline: firstStatus.isOnline,
               onTapOn: () => onToggle(firstKey, true),
               onTapOff: () => onToggle(firstKey, false),
             ),
             const SizedBox(height: 12),
             _DeviceControlRow(
               label: secondLabel,
-              status: secondStatus.displayStatus,
+              isOnline: secondStatus.isOnline,
               onTapOn: () => onToggle(secondKey, true),
               onTapOff: () => onToggle(secondKey, false),
+            ),
+            if (showThresholdControl) ...<Widget>[
+              const SizedBox(height: 16),
+              _FanThresholdControl(
+                initialThreshold: initialThreshold,
+                onSetThreshold: onSetThreshold,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FanThresholdControl extends StatefulWidget {
+  const _FanThresholdControl({
+    required this.initialThreshold,
+    required this.onSetThreshold,
+  });
+
+  final int initialThreshold;
+  final Future<bool> Function(int value)? onSetThreshold;
+
+  @override
+  State<_FanThresholdControl> createState() => _FanThresholdControlState();
+}
+
+class _FanThresholdControlState extends State<_FanThresholdControl> {
+  late final TextEditingController _thresholdController;
+  bool _isSaving = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _thresholdController = TextEditingController(
+      text: widget.initialThreshold.toString(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _thresholdController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitThreshold() async {
+    final value = int.tryParse(_thresholdController.text.trim());
+    if (value == null) {
+      setState(() {
+        _errorText = HomeStrings.fanThresholdInvalid;
+      });
+      return;
+    }
+
+    final callback = widget.onSetThreshold;
+    if (callback == null) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorText = null;
+    });
+
+    final success = await callback(value);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = false;
+      _errorText = success ? null : HomeStrings.fanThresholdUpdateFailed;
+    });
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(HomeStrings.fanThresholdUpdated)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.45)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              HomeStrings.fanThresholdTitle,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: TextField(
+                    controller: _thresholdController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: HomeStrings.fanThresholdHint,
+                      errorText: _errorText,
+                    ),
+                    onChanged: (_) {
+                      if (_errorText == null) {
+                        return;
+                      }
+
+                      setState(() {
+                        _errorText = null;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                FilledButton(
+                  onPressed: _isSaving ? null : _submitThreshold,
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(HomeStrings.fanThresholdSave),
+                ),
+              ],
             ),
           ],
         ),
@@ -64,43 +209,37 @@ class DeviceControlSheet extends StatelessWidget {
 class _DeviceControlRow extends StatelessWidget {
   const _DeviceControlRow({
     required this.label,
-    required this.status,
+    required this.isOnline,
     required this.onTapOn,
     required this.onTapOff,
   });
 
   final String label;
-  final String status;
+  final bool isOnline;
   final VoidCallback onTapOn;
   final VoidCallback onTapOff;
 
   @override
   Widget build(BuildContext context) {
-    final normalizedStatus = status.toLowerCase();
-    final isOn = normalizedStatus == 'on';
-    final isOff = normalizedStatus == 'off';
     final colorScheme = Theme.of(context).colorScheme;
-    final statusTint = isOn
-        ? const Color(0xFFDCFCE7)
-        : isOff
-        ? const Color(0xFFFEE2E2)
-        : const Color(0xFFE5E7EB);
-    final statusTextColor = isOn
-        ? const Color(0xFF166534)
-        : isOff
-        ? const Color(0xFF991B1B)
-        : const Color(0xFF374151);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface.withValues(
+          alpha: isOnline ? 1.0 : 0.5,
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+          color: isOnline
+              ? colorScheme.outlineVariant.withValues(alpha: 0.45)
+              : colorScheme.outlineVariant.withValues(alpha: 0.2),
         ),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: Colors.black.withValues(
+              alpha: isDark ? 0.16 : 0.04,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -113,28 +252,28 @@ class _DeviceControlRow extends StatelessWidget {
             Row(
               children: <Widget>[
                 Expanded(
-                  child: Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusTint,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    status,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: statusTextColor,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isOnline ? null : colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (!isOnline)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Device offline',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.error,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -145,9 +284,7 @@ class _DeviceControlRow extends StatelessWidget {
                 Expanded(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: isOn
-                          ? colorScheme.primary
-                          : colorScheme.primary.withValues(alpha: 0.8),
+                      backgroundColor: colorScheme.primary,
                     ),
                     onPressed: onTapOn,
                     child: const Text('On'),
@@ -155,18 +292,11 @@ class _DeviceControlRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: isOff
-                            ? colorScheme.primary
-                            : colorScheme.outlineVariant,
-                      ),
-                      foregroundColor: isOff
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
                     ),
-                    onPressed: onTapOff,
+                    onPressed: isOnline ? onTapOff : null,
                     child: const Text('Off'),
                   ),
                 ),

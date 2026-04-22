@@ -19,7 +19,9 @@ class SmartHomeApp extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: AppStrings.appTitle,
-      theme: AppTheme.light(),
+      theme: AppTheme.dark(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.dark,
       routerConfig: AppRouter.router,
     );
   }

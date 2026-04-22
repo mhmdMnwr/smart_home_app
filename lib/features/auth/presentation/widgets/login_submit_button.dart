@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_colors.dart';
 import '../constants/login_strings.dart';
 import '../constants/login_ui_values.dart';
 
@@ -16,14 +15,17 @@ class LoginSubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       height: LoginUiValues.submitButtonHeight,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: <Color>[
-              AppColors.submitGradientStart,
-              AppColors.submitGradientEnd,
+              colorScheme.primary,
+              isDark ? colorScheme.secondary : colorScheme.tertiary,
             ],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
@@ -33,26 +35,26 @@ class LoginSubmitButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.transparent,
-            disabledBackgroundColor: AppColors.transparent,
-            shadowColor: AppColors.transparent,
+            backgroundColor: Colors.transparent,
+            disabledBackgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(LoginUiValues.inputRadius),
             ),
           ),
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.loadingIndicator,
+                    color: colorScheme.onPrimary,
                   ),
                 )
-              : const Text(
+              : Text(
                   LoginStrings.loginAction,
                   style: TextStyle(
-                    color: AppColors.submitText,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

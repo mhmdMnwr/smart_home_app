@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../data/models/device_status_model.dart';
 import '../constants/home_strings.dart';
 import '../cubit/home_cubit.dart';
@@ -10,143 +12,221 @@ import '../widgets/home_error_view.dart';
 import '../widgets/quick_action_card.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.username});
+
+  final String username;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(HomeStrings.homePageTitle),
-        actions: <Widget>[
-          IconButton(
-            tooltip: HomeStrings.refresh,
-            onPressed: () => context.read<HomeCubit>().loadDevicesStatus(),
-            icon: const Icon(Icons.refresh_rounded),
-          ),
-        ],
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppColorTokens>() ??
+        AppColors.darkTokens;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            tokens.pageGradientTop,
+            tokens.pageGradientMiddle,
+            tokens.pageGradientBottom,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
-      body: BlocBuilder<HomeCubit, HomeState>(
-        builder: (context, state) {
-          if (state.isLoading && state.devices == null) {
-            return const _HomeLoadingView();
-          }
+      child: SafeArea(
+        child: BlocBuilder<HomeCubit, HomeState>(
+          builder: (context, state) {
+            if (state.isLoading && state.devices == null) {
+              return const _HomeLoadingView();
+            }
 
-          final devices = state.devices;
-          if (devices == null) {
-            return HomeErrorView(
-              message: state.errorMessage ?? HomeStrings.failedToLoadDevices,
-              onRetry: () => context.read<HomeCubit>().loadDevicesStatus(),
-            );
-          }
+            final devices = state.devices;
+            if (devices == null) {
+              return HomeErrorView(
+                message: state.errorMessage ?? HomeStrings.failedToLoadDevices,
+                onRetry: () => context.read<HomeCubit>().loadDevicesStatus(),
+              );
+            }
 
-          final onlineCount = _onlineDevicesCount(devices);
-          final offlineCount = _offlineDevicesCount(devices);
-
-          return RefreshIndicator(
-            onRefresh: () => context.read<HomeCubit>().loadDevicesStatus(),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-              children: <Widget>[
-                _HomeOverviewCard(
-                  onlineCount: onlineCount,
-                  offlineCount: offlineCount,
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  HomeStrings.quickActions,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+            return RefreshIndicator(
+              onRefresh: () => context.read<HomeCubit>().loadDevicesStatus(),
+              color: colorScheme.primary,
+              backgroundColor: tokens.deviceCardSurface,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${HomeStrings.hello}, $username',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      _NotificationButton(
+                        onTap: () => context.read<HomeCubit>().loadDevicesStatus(),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  HomeStrings.pullToRefresh,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 14),
+                  Text(
+                    HomeStrings.devices,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 14,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 1.05,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: <Widget>[
-                    QuickActionCard(
-                      title: HomeStrings.lights,
-                      subtitle: devices.lightsSummary,
-                      icon: Icons.lightbulb_outline,
-                      gradient: const <Color>[
-                        Color(0xFFFF9F0A),
-                        Color(0xFFF76680),
-                      ],
-                      onTap: () => _showControlSheet(
-                        context: context,
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 0.9,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: <Widget>[
+                      QuickActionCard(
                         title: HomeStrings.lights,
-                        firstLabel: HomeStrings.lamp1,
-                        firstKey: 'lamp1',
-                        secondLabel: HomeStrings.lamp2,
-                        secondKey: 'lamp2',
-                        devices: devices,
+                        subtitle: devices.lightsSummary,
+                        icon: Icons.wb_incandescent_rounded,
+                        imageAsset: 'assets/images/smart_light.png',
+                        gradient: const <Color>[
+                          Color(0xFF276BFF),
+                          Color(0xFF33A4FF),
+                        ],
+                        deviceLabels: <String>[
+                          HomeStrings.lamp1,
+                          HomeStrings.lamp2,
+                        ],
+                        deviceStates: <bool>[
+                          devices.lamp1.isOnline,
+                          devices.lamp2.isOnline,
+                        ],
+                        onTap: () => _showControlSheet(
+                          context: context,
+                          title: HomeStrings.lights,
+                          firstLabel: HomeStrings.lamp1,
+                          firstKey: 'lamp1',
+                          secondLabel: HomeStrings.lamp2,
+                          secondKey: 'lamp2',
+                          devices: devices,
+                          showThresholdControl: false,
+                        ),
                       ),
-                    ),
-                    QuickActionCard(
-                      title: HomeStrings.fans,
-                      subtitle: devices.fansSummary,
-                      icon: Icons.toys_outlined,
-                      gradient: const <Color>[
-                        Color(0xFF00C2A8),
-                        Color(0xFF0EA5E9),
-                      ],
-                      onTap: () => _showControlSheet(
-                        context: context,
+                      QuickActionCard(
                         title: HomeStrings.fans,
-                        firstLabel: HomeStrings.fan1,
-                        firstKey: 'fan1',
-                        secondLabel: HomeStrings.fan2,
-                        secondKey: 'fan2',
-                        devices: devices,
+                        subtitle: devices.fansSummary,
+                        icon: Icons.air_rounded,
+                        imageAsset: 'assets/images/smart_fan.png',
+                        gradient: const <Color>[
+                          Color(0xFF1F61F4),
+                          Color(0xFF2CC9FF),
+                        ],
+                        deviceLabels: <String>[
+                          HomeStrings.fan1,
+                          HomeStrings.fan2,
+                        ],
+                        deviceStates: <bool>[
+                          devices.fan1.isOnline,
+                          devices.fan2.isOnline,
+                        ],
+                        onTap: () => _showControlSheet(
+                          context: context,
+                          title: HomeStrings.fans,
+                          firstLabel: HomeStrings.fan1,
+                          firstKey: 'fan1',
+                          secondLabel: HomeStrings.fan2,
+                          secondKey: 'fan2',
+                          devices: devices,
+                          showThresholdControl: true,
+                        ),
                       ),
-                    ),
-                    QuickActionCard(
-                      title: HomeStrings.openDoor,
-                      subtitle: HomeStrings.alarmNotConnected,
-                      icon: Icons.lock_open_rounded,
-                      gradient: const <Color>[
-                        Color(0xFF94A3B8),
-                        Color(0xFF64748B),
-                      ],
-                      onTap: () {},
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+                      QuickActionCard(
+                        title: HomeStrings.openDoor,
+                        subtitle: HomeStrings.enterDoorCode,
+                        icon: Icons.lock_open_rounded,
+                        imageAsset: 'assets/images/smart_lock.png',
+                        gradient: const <Color>[
+                          Color(0xFF2B6EFF),
+                          Color(0xFF5E8FFF),
+                        ],
+                        onTap: () => _showDoorCodeDialog(context),
+                      ),
+                      QuickActionCard(
+                        title: HomeStrings.alarm,
+                        subtitle: devices.alarm.isOnline
+                            ? HomeStrings.alarmTapToSwitch
+                            : HomeStrings.alarmCanSwitchOnlyWhenOn,
+                        icon: Icons.warning_amber_rounded,
+                        imageAsset: 'assets/images/smart_alarm.png',
+                        gradient: const <Color>[
+                          Color(0xFF1C57DA),
+                          Color(0xFF3F86FF),
+                        ],
+                        deviceLabels: const <String>[HomeStrings.alarm],
+                        deviceStates: <bool>[devices.alarm.isOnline],
+                        onTap: devices.alarm.isOnline
+                            ? () => _showAlarmControlSheet(context)
+                            : null,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  int _onlineDevicesCount(HomeDevicesStatusModel devices) {
-    return <DeviceStatusModel>[
-      devices.lamp1,
-      devices.lamp2,
-      devices.fan1,
-      devices.fan2,
-    ].where((device) => device.isOnline).length;
-  }
+  Future<void> _showAlarmControlSheet(BuildContext context) async {
+    final cubit = context.read<HomeCubit>();
 
-  int _offlineDevicesCount(HomeDevicesStatusModel devices) {
-    return <DeviceStatusModel>[
-      devices.lamp1,
-      devices.lamp2,
-      devices.fan1,
-      devices.fan2,
-    ].where((device) => device.isOffline).length;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  HomeStrings.alarmControlTitle,
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () {
+                    cubit.setDevicePower(deviceKey: 'alarm', isOn: false);
+                    Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text(HomeStrings.alarmSwitchOff),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    cubit.loadDevicesStatus();
   }
 
   void _showControlSheet({
@@ -157,7 +237,10 @@ class HomePage extends StatelessWidget {
     required String secondLabel,
     required String secondKey,
     required HomeDevicesStatusModel devices,
+    required bool showThresholdControl,
   }) {
+    final cubit = context.read<HomeCubit>();
+    
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -174,16 +257,127 @@ class HomePage extends StatelessWidget {
           secondLabel: secondLabel,
           secondKey: secondKey,
           secondStatus: devices.deviceByKey(secondKey),
+          showThresholdControl: showThresholdControl,
+          onSetThreshold: showThresholdControl
+              ? (value) => cubit.setFanTempThreshold(value: value)
+              : null,
           onToggle: (deviceKey, isOn) {
-            context.read<HomeCubit>().setDevicePower(
+            cubit.setDevicePower(
               deviceKey: deviceKey,
               isOn: isOn,
             );
-            Navigator.of(context).pop();
+          },
+        );
+      },
+    ).then((_) {
+      // When the modal is dismissed, reload device status
+      cubit.loadDevicesStatus();
+    }).catchError((_) {
+      // Ignore errors
+    });
+  }
+
+  Future<void> _showDoorCodeDialog(BuildContext context) async {
+    final rootContext = context;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppColorTokens>() ??
+        AppColors.darkTokens;
+    final TextEditingController codeController = TextEditingController();
+    String? errorMessage;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: tokens.dialogSurface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                HomeStrings.enterDoorCode,
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
+              content: TextField(
+                controller: codeController,
+                autofocus: true,
+                maxLength: 4,
+                keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                onChanged: (_) {
+                  if (errorMessage == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    errorMessage = null;
+                  });
+                },
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  letterSpacing: 6,
+                  fontWeight: FontWeight.w700,
+                ),
+                decoration: InputDecoration(
+                  hintText: HomeStrings.doorCodeHint,
+                  counterText: '',
+                  filled: true,
+                  fillColor: colorScheme.surface.withValues(alpha: 0.44),
+                  hintStyle: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  errorText: errorMessage,
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    HomeStrings.cancel,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (codeController.text.length != 4) {
+                      setState(() {
+                        errorMessage = HomeStrings.codeMustBeFourDigits;
+                      });
+                      return;
+                    }
+
+                    Navigator.of(dialogContext).pop();
+                    final opened = await rootContext
+                        .read<HomeCubit>()
+                        .openDoor(password: codeController.text);
+                    if (!rootContext.mounted) {
+                      return;
+                    }
+
+                    ScaffoldMessenger.of(rootContext).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          opened
+                              ? HomeStrings.doorOpened
+                              : HomeStrings.doorOpenFailed,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text(HomeStrings.unlock),
+                ),
+              ],
+            );
           },
         );
       },
     );
+
+    codeController.dispose();
   }
 }
 
@@ -192,16 +386,18 @@ class _HomeLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          const CircularProgressIndicator(),
+          CircularProgressIndicator(color: colorScheme.primary),
           const SizedBox(height: 12),
           Text(
             HomeStrings.loadingDevices,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurface,
             ),
           ),
         ],
@@ -210,134 +406,35 @@ class _HomeLoadingView extends StatelessWidget {
   }
 }
 
-class _HomeOverviewCard extends StatelessWidget {
-  const _HomeOverviewCard({
-    required this.onlineCount,
-    required this.offlineCount,
-  });
+class _NotificationButton extends StatelessWidget {
+  const _NotificationButton({required this.onTap});
 
-  final int onlineCount;
-  final int offlineCount;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final totalDevices = onlineCount + offlineCount;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppColorTokens>() ??
+        AppColors.darkTokens;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: <Color>[Color(0xFF0EA5E9), Color(0xFF2563EB)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x260E7490),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              HomeStrings.homeTagline,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$totalDevices devices connected',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: _StatusCountPill(
-                    label: HomeStrings.active,
-                    count: onlineCount,
-                    icon: Icons.bolt_rounded,
-                    tint: const Color(0xFFDCFCE7),
-                    textColor: const Color(0xFF14532D),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _StatusCountPill(
-                    label: HomeStrings.inactive,
-                    count: offlineCount,
-                    icon: Icons.power_settings_new_rounded,
-                    tint: const Color(0xFFFFEDD5),
-                    textColor: const Color(0xFF9A3412),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusCountPill extends StatelessWidget {
-  const _StatusCountPill({
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.tint,
-    required this.textColor,
-  });
-
-  final String label;
-  final int count;
-  final IconData icon;
-  final Color tint;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tint,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, color: textColor, size: 18),
-            const SizedBox(width: 8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withValues(alpha: 0.88),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '$count',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ],
+        child: Ink(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: tokens.notificationSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: tokens.notificationBorder),
+          ),
+          child: Icon(
+            Icons.notifications_none_rounded,
+            color: colorScheme.onSurface,
+            size: 20,
+          ),
         ),
       ),
     );

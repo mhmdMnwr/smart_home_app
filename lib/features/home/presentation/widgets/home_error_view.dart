@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../constants/home_strings.dart';
 
 class HomeErrorView extends StatelessWidget {
@@ -10,6 +11,11 @@ class HomeErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = Theme.of(context).extension<AppColorTokens>() ??
+        AppColors.darkTokens;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -17,16 +23,14 @@ class HomeErrorView extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 380),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: tokens.deviceCardSurface,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outlineVariant.withValues(alpha: 0.45),
+                color: tokens.deviceCardBorder,
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.08),
                   blurRadius: 18,
                   offset: const Offset(0, 10),
                 ),
@@ -53,7 +57,9 @@ class HomeErrorView extends StatelessWidget {
                   Text(
                     message,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(

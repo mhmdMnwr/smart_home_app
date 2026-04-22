@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_colors.dart';
 import '../constants/login_ui_values.dart';
 
 class LoginInputField extends StatelessWidget {
@@ -9,7 +8,7 @@ class LoginInputField extends StatelessWidget {
     required this.label,
     required this.controller,
     required this.hintText,
-    required this.prefixIcon,
+    required this.prefixImageAsset,
     required this.validator,
     required this.onChanged,
     this.keyboardType,
@@ -20,7 +19,7 @@ class LoginInputField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String hintText;
-  final IconData prefixIcon;
+  final String prefixImageAsset;
   final String? Function(String?) validator;
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
@@ -29,6 +28,8 @@ class LoginInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -36,7 +37,7 @@ class LoginInputField extends StatelessWidget {
           label,
           style: Theme.of(
             context,
-          ).textTheme.labelLarge?.copyWith(color: AppColors.labelText),
+          ).textTheme.labelLarge?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: LoginUiValues.spacingXs),
         TextFormField(
@@ -47,10 +48,27 @@ class LoginInputField extends StatelessWidget {
           validator: validator,
           decoration: InputDecoration(
             hintText: hintText,
-            prefixIcon: const SizedBox.shrink(),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Image.asset(
+                prefixImageAsset,
+                width: 18,
+                height: 18,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  );
+                },
+              ),
+            ),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 46,
+              minHeight: 46,
+            ),
             suffixIcon: suffixIcon,
-          ).copyWith(
-            prefixIcon: Icon(prefixIcon, size: 18, color: AppColors.hint),
           ),
         ),
       ],

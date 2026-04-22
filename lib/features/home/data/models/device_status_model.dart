@@ -4,12 +4,14 @@ class HomeDevicesStatusModel {
     required this.lamp2,
     required this.fan1,
     required this.fan2,
+    this.alarm = const DeviceStatusModel.unknown(),
   });
 
   final DeviceStatusModel lamp1;
   final DeviceStatusModel lamp2;
   final DeviceStatusModel fan1;
   final DeviceStatusModel fan2;
+  final DeviceStatusModel alarm;
 
   factory HomeDevicesStatusModel.fromApi(Map<String, dynamic> data) {
     return HomeDevicesStatusModel(
@@ -17,6 +19,9 @@ class HomeDevicesStatusModel {
       lamp2: DeviceStatusModel.fromApi(data['lamp2']),
       fan1: DeviceStatusModel.fromApi(data['fan1']),
       fan2: DeviceStatusModel.fromApi(data['fan2']),
+      alarm: DeviceStatusModel.fromApi(
+        data['alarm'] ?? data['alram'] ?? data['setAlarm'],
+      ),
     );
   }
 
@@ -30,12 +35,14 @@ class HomeDevicesStatusModel {
     DeviceStatusModel? lamp2,
     DeviceStatusModel? fan1,
     DeviceStatusModel? fan2,
+    DeviceStatusModel? alarm,
   }) {
     return HomeDevicesStatusModel(
       lamp1: lamp1 ?? this.lamp1,
       lamp2: lamp2 ?? this.lamp2,
       fan1: fan1 ?? this.fan1,
       fan2: fan2 ?? this.fan2,
+      alarm: alarm ?? this.alarm,
     );
   }
 
@@ -49,6 +56,8 @@ class HomeDevicesStatusModel {
         return fan1;
       case 'fan2':
         return fan2;
+      case 'alarm':
+        return alarm;
       default:
         return const DeviceStatusModel.unknown();
     }
@@ -69,6 +78,8 @@ class HomeDevicesStatusModel {
         return copyWith(fan1: nextStatus);
       case 'fan2':
         return copyWith(fan2: nextStatus);
+      case 'alarm':
+        return copyWith(alarm: nextStatus);
       default:
         return this;
     }

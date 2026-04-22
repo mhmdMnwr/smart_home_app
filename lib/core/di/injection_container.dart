@@ -12,6 +12,7 @@ import '../../features/home/presentation/cubit/home_cubit.dart';
 import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
+import '../network/mqtt_client.dart';
 import '../storage/token_storage.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -57,6 +58,7 @@ Future<void> configureDependencies() async {
     return dio;
   });
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(dio: getIt<Dio>()));
+  getIt.registerLazySingleton<MqttClient>(() => MqttClient(dio: getIt<Dio>()));
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
   );
@@ -67,7 +69,10 @@ Future<void> configureDependencies() async {
     ),
   );
   getIt.registerLazySingleton<HomeRemoteDataSource>(
-    () => HomeRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+    () => HomeRemoteDataSourceImpl(
+      apiClient: getIt<ApiClient>(),
+      mqttClient: getIt<MqttClient>(),
+    ),
   );
   getIt.registerLazySingleton<HomeRepository>(
     () => HomeRepositoryImpl(

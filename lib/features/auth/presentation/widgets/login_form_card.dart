@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_colors.dart';
 import '../constants/login_strings.dart';
 import '../constants/login_ui_values.dart';
 import 'login_input_field.dart';
@@ -45,14 +44,17 @@ class LoginFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface.withValues(alpha: isDark ? 0.88 : 0.98),
         borderRadius: BorderRadius.circular(LoginUiValues.formCardRadius),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const <BoxShadow>[
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: <BoxShadow>[
           BoxShadow(
-            color: AppColors.cardShadow,
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.08),
             blurRadius: 20,
             offset: Offset(0, 10),
           ),
@@ -78,7 +80,7 @@ class LoginFormCard extends StatelessWidget {
                       label: LoginStrings.emailLabel,
                       controller: emailController,
                       hintText: LoginStrings.emailHint,
-                      prefixIcon: Icons.mail_outline,
+                      prefixImageAsset: 'assets/images/email.png',
                       keyboardType: TextInputType.emailAddress,
                       validator: emailValidator,
                       onChanged: onEmailChanged,
@@ -88,7 +90,7 @@ class LoginFormCard extends StatelessWidget {
                       label: LoginStrings.passwordLabel,
                       controller: passwordController,
                       hintText: LoginStrings.passwordHint,
-                      prefixIcon: Icons.lock_outline,
+                      prefixImageAsset: 'assets/images/password.png',
                       obscureText: obscurePassword,
                       validator: passwordValidator,
                       onChanged: onPasswordChanged,
@@ -98,7 +100,7 @@ class LoginFormCard extends StatelessWidget {
                           obscurePassword
                               ? Icons.visibility_outlined
                               : Icons.visibility_off_outlined,
-                          color: AppColors.hint,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -119,7 +121,7 @@ class LoginFormCard extends StatelessWidget {
                         Text(
                           errorMessage!,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.errorText),
+                              ?.copyWith(color: colorScheme.error),
                         ),
                       ],
                   ],

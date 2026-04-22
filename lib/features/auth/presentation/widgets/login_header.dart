@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/theme/app_colors.dart';
 import '../constants/login_strings.dart';
 import '../constants/login_ui_values.dart';
 
@@ -9,6 +8,8 @@ class LoginHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: <Widget>[
         
@@ -18,7 +19,7 @@ class LoginHeader extends StatelessWidget {
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppColors.primaryText,
+            color: colorScheme.onSurface,
             height: 1.1,
           ),
         ),
@@ -27,7 +28,7 @@ class LoginHeader extends StatelessWidget {
           LoginStrings.subtitle,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppColors.secondaryText,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
       ],
