@@ -12,8 +12,10 @@ class SensorsCubit extends Cubit<SensorsState> {
 
   final SensorsRepository _sensorsRepository;
 
+  static const int _pageLimit = 10;
+
   Future<void> loadInitial() async {
-    await loadHistory(type: SensorType.temperature, page: 1, limit: 10);
+    await loadHistory(type: SensorType.temperature, page: 1, limit: _pageLimit);
   }
 
   Future<void> selectType(SensorType type) async {
@@ -24,25 +26,28 @@ class SensorsCubit extends Cubit<SensorsState> {
     }
 
     final current = state.historyStateFor(type);
-    if (current.pageData != null || current.isLoading) {
+    if (current.allItems.isNotEmpty || current.isLoading) {
       return;
     }
 
-    await loadHistory(type: type, page: 1, limit: 10);
+    await loadHistory(type: type, page: 1, limit: _pageLimit);
   }
 
+  /// Load a specific page and **append** items for infinite scroll.
   Future<void> loadHistory({
     required SensorType type,
     int page = 1,
-    int limit = 10,
+    int limit = _pageLimit,
   }) async {
     if (type == SensorType.fire) {
       return;
     }
 
+    final current = state.historyStateFor(type);
+
     _emitTypeState(
       type,
-      state.historyStateFor(type).copyWith(
+      current.copyWith(
         isLoading: true,
         errorMessage: null,
       ),
@@ -55,18 +60,27 @@ class SensorsCubit extends Cubit<SensorsState> {
         limit: limit,
       );
 
+      final updatedItems = page == 1
+          ? pageData.items
+          : <dynamic>[...current.allItems, ...pageData.items];
+
+      final hasReachedMax = page >= pageData.totalPages;
+
       _emitTypeState(
         type,
-        state.historyStateFor(type).copyWith(
+        current.copyWith(
           isLoading: false,
           errorMessage: null,
           pageData: pageData,
+          allItems: List<dynamic>.from(updatedItems).cast(),
+          hasReachedMax: hasReachedMax,
+          currentPage: page,
         ),
       );
     } on AppException catch (error) {
       _emitTypeState(
         type,
-        state.historyStateFor(type).copyWith(
+        current.copyWith(
           isLoading: false,
           errorMessage: error.message,
         ),
@@ -74,7 +88,7 @@ class SensorsCubit extends Cubit<SensorsState> {
     } catch (_) {
       _emitTypeState(
         type,
-        state.historyStateFor(type).copyWith(
+        current.copyWith(
           isLoading: false,
           errorMessage: AppStrings.genericError,
         ),
@@ -82,6 +96,18 @@ class SensorsCubit extends Cubit<SensorsState> {
     }
   }
 
+  /// Called when the user scrolls near the bottom – loads next page.
+  Future<void> loadMore(SensorType type) async {
+    final current = state.historyStateFor(type);
+    if (current.isLoading || current.hasReachedMax) {
+      return;
+    }
+
+    final nextPage = current.currentPage + 1;
+    await loadHistory(type: type, page: nextPage, limit: _pageLimit);
+  }
+
+  // Keep legacy helpers for backward compat (unused now but harmless).
   Future<void> goToPreviousPage(SensorType type) async {
     final current = state.historyStateFor(type).pageData;
     if (current == null || current.page <= 1) {

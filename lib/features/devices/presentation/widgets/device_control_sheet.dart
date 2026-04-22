@@ -34,7 +34,7 @@ class DeviceControlSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -285,6 +285,8 @@ class _DeviceControlRow extends StatelessWidget {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: colorScheme.primary,
+                      disabledBackgroundColor: colorScheme.primary,
+                      disabledForegroundColor: Colors.white,
                     ),
                     onPressed: onTapOn,
                     child: const Text('On'),
@@ -295,8 +297,10 @@ class _DeviceControlRow extends StatelessWidget {
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: colorScheme.primary,
+                      disabledBackgroundColor: colorScheme.primary,
+                      disabledForegroundColor: Colors.white,
                     ),
-                    onPressed: isOnline ? onTapOff : null,
+                    onPressed: onTapOff,
                     child: const Text('Off'),
                   ),
                 ),

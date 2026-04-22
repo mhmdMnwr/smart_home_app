@@ -7,11 +7,23 @@ class SensorHistoryState {
     this.isLoading = false,
     this.errorMessage,
     this.pageData,
+    this.allItems = const <SensorHistoryItem>[],
+    this.hasReachedMax = false,
+    this.currentPage = 0,
   });
 
   final bool isLoading;
   final String? errorMessage;
   final SensorHistoryPage? pageData;
+
+  /// Accumulated items across all loaded pages (for infinite scroll).
+  final List<SensorHistoryItem> allItems;
+
+  /// Whether the last page has been reached.
+  final bool hasReachedMax;
+
+  /// The latest page that was loaded.
+  final int currentPage;
 
   static const Object _unset = Object();
 
@@ -19,6 +31,9 @@ class SensorHistoryState {
     bool? isLoading,
     Object? errorMessage = _unset,
     Object? pageData = _unset,
+    List<SensorHistoryItem>? allItems,
+    bool? hasReachedMax,
+    int? currentPage,
   }) {
     return SensorHistoryState(
       isLoading: isLoading ?? this.isLoading,
@@ -28,6 +43,9 @@ class SensorHistoryState {
       pageData: identical(pageData, _unset)
           ? this.pageData
           : pageData as SensorHistoryPage?,
+      allItems: allItems ?? this.allItems,
+      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
+      currentPage: currentPage ?? this.currentPage,
     );
   }
 }
