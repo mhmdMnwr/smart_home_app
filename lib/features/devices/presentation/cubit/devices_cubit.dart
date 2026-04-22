@@ -2,15 +2,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/app_exception.dart';
-import '../../data/repositories/home_repository.dart';
-import 'home_state.dart';
+import '../../data/repositories/devices_repository.dart';
+import 'devices_state.dart';
 
-class HomeCubit extends Cubit<HomeState> {
-  HomeCubit({required HomeRepository homeRepository})
-    : _homeRepository = homeRepository,
-      super(const HomeState());
+class DevicesCubit extends Cubit<DevicesState> {
+  DevicesCubit({required DevicesRepository devicesRepository})
+    : _devicesRepository = devicesRepository,
+      super(const DevicesState());
 
-  final HomeRepository _homeRepository;
+  final DevicesRepository _devicesRepository;
 
   Future<void> loadDevicesStatus() async {
     if (state.isLoading) {
@@ -20,7 +20,7 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
     try {
-      final devices = await _homeRepository.getDevicesStatus();
+      final devices = await _devicesRepository.getDevicesStatus();
       emit(
         state.copyWith(
           isLoading: false,
@@ -40,10 +40,6 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  /// Controls device power via MQTT (fire and forget)
-  /// 
-  /// Does not wait for response - sends command immediately and returns
-  /// Updates to device state will be reflected on next loadDevicesStatus call
   void setDevicePower({
     required String deviceKey,
     required bool isOn,
@@ -75,7 +71,6 @@ class HomeCubit extends Cubit<HomeState> {
       }
     }
 
-    // Emit optimistic update
     final optimisticDevices = currentDevices.updateDeviceStatus(
       deviceKey: deviceKey,
       isOn: isOn,
@@ -87,8 +82,7 @@ class HomeCubit extends Cubit<HomeState> {
       ),
     );
 
-    // Fire and forget - send command without waiting
-    _homeRepository.setDevicePower(
+    _devicesRepository.setDevicePower(
       deviceKey: deviceKey,
       isOn: isOn,
     );
@@ -102,7 +96,7 @@ class HomeCubit extends Cubit<HomeState> {
     }
 
     try {
-      await _homeRepository.openDoor(password: normalizedPassword);
+      await _devicesRepository.openDoor(password: normalizedPassword);
       emit(state.copyWith(errorMessage: null));
       return true;
     } on AppException catch (error) {
@@ -125,7 +119,7 @@ class HomeCubit extends Cubit<HomeState> {
     }
 
     try {
-      await _homeRepository.setFanTempThreshold(value: value);
+      await _devicesRepository.setFanTempThreshold(value: value);
       emit(state.copyWith(errorMessage: null));
       return true;
     } on AppException catch (error) {

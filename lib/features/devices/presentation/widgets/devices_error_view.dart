@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../constants/home_strings.dart';
+import '../../../home/presentation/constants/home_strings.dart';
 
-class HomeErrorView extends StatelessWidget {
-  const HomeErrorView({super.key, required this.message, required this.onRetry});
+class DevicesErrorView extends StatelessWidget {
+  const DevicesErrorView({
+    super.key,
+    required this.message,
+    required this.onRetry,
+  });
 
   final String message;
   final VoidCallback onRetry;

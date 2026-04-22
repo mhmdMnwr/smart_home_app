@@ -4,6 +4,8 @@ class HomeDevicesStatusModel {
     required this.lamp2,
     required this.fan1,
     required this.fan2,
+    this.dht11 = const DeviceStatusModel.unknown(),
+    this.mq2 = const DeviceStatusModel.unknown(),
     this.alarm = const DeviceStatusModel.unknown(),
   });
 
@@ -11,6 +13,8 @@ class HomeDevicesStatusModel {
   final DeviceStatusModel lamp2;
   final DeviceStatusModel fan1;
   final DeviceStatusModel fan2;
+  final DeviceStatusModel dht11;
+  final DeviceStatusModel mq2;
   final DeviceStatusModel alarm;
 
   factory HomeDevicesStatusModel.fromApi(Map<String, dynamic> data) {
@@ -19,6 +23,10 @@ class HomeDevicesStatusModel {
       lamp2: DeviceStatusModel.fromApi(data['lamp2']),
       fan1: DeviceStatusModel.fromApi(data['fan1']),
       fan2: DeviceStatusModel.fromApi(data['fan2']),
+      dht11: DeviceStatusModel.fromApi(
+        data['dht11'] ?? data['tempHumid'] ?? data['temp_humid'],
+      ),
+      mq2: DeviceStatusModel.fromApi(data['mq2'] ?? data['gas']),
       alarm: DeviceStatusModel.fromApi(
         data['alarm'] ?? data['alram'] ?? data['setAlarm'],
       ),
@@ -35,6 +43,8 @@ class HomeDevicesStatusModel {
     DeviceStatusModel? lamp2,
     DeviceStatusModel? fan1,
     DeviceStatusModel? fan2,
+    DeviceStatusModel? dht11,
+    DeviceStatusModel? mq2,
     DeviceStatusModel? alarm,
   }) {
     return HomeDevicesStatusModel(
@@ -42,6 +52,8 @@ class HomeDevicesStatusModel {
       lamp2: lamp2 ?? this.lamp2,
       fan1: fan1 ?? this.fan1,
       fan2: fan2 ?? this.fan2,
+      dht11: dht11 ?? this.dht11,
+      mq2: mq2 ?? this.mq2,
       alarm: alarm ?? this.alarm,
     );
   }
@@ -56,6 +68,10 @@ class HomeDevicesStatusModel {
         return fan1;
       case 'fan2':
         return fan2;
+      case 'dht11':
+        return dht11;
+      case 'mq2':
+        return mq2;
       case 'alarm':
         return alarm;
       default:
@@ -110,6 +126,24 @@ class DeviceStatusModel {
   }
 
   factory DeviceStatusModel.fromApi(dynamic value) {
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'online' || normalized == 'on' || normalized == 'true') {
+        return DeviceStatusModel(status: 'online', updatedAt: null);
+      }
+
+      if (normalized == 'offline' || normalized == 'off' || normalized == 'false') {
+        return DeviceStatusModel(status: 'offline', updatedAt: null);
+      }
+    }
+
+    if (value is bool) {
+      return DeviceStatusModel(
+        status: value ? 'online' : 'offline',
+        updatedAt: null,
+      );
+    }
+
     if (value is! Map<String, dynamic>) {
       return const DeviceStatusModel.unknown();
     }

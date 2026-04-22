@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/di/injection_container.dart';
+import '../../../sensors/presentation/cubit/sensors_cubit.dart';
+import '../../../sensors/presentation/pages/sensors_page.dart';
 import '../constants/home_strings.dart';
 import 'home_page.dart';
 
@@ -27,7 +31,10 @@ class _HomeShellPageState extends State<HomeShellPage> {
         index: _selectedIndex,
         children: <Widget>[
           HomePage(username: widget.username),
-          _EmptyTabPage(tokens: tokens),
+          BlocProvider<SensorsCubit>(
+            create: (_) => getIt<SensorsCubit>()..loadInitial(),
+            child: const SensorsPage(),
+          ),
           _EmptyTabPage(tokens: tokens),
           _EmptyTabPage(tokens: tokens),
           _EmptyTabPage(tokens: tokens),

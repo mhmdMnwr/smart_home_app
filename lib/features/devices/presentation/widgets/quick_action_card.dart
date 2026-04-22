@@ -21,8 +21,8 @@ class QuickActionCard extends StatelessWidget {
   final List<Color> gradient;
   final VoidCallback? onTap;
   final String? imageAsset;
-  final List<String>? deviceLabels; // e.g., ['Lamp 1', 'Lamp 2']
-  final List<bool>? deviceStates; // e.g., [true, false] for on/off
+  final List<String>? deviceLabels;
+  final List<bool>? deviceStates;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,6 @@ class QuickActionCard extends StatelessWidget {
     final tokens = Theme.of(context).extension<AppColorTokens>() ??
         AppColors.darkTokens;
 
-    // Check if we should show device list
     final showDeviceList =
         deviceLabels != null && deviceStates != null && deviceLabels!.isNotEmpty;
 
@@ -134,8 +133,8 @@ class QuickActionCard extends StatelessWidget {
                         final label = deviceLabels![index];
                         final isOn = deviceStates![index];
                         final ledColor = isOn
-                            ? const Color(0xFF22C55E) // Green
-                            : const Color(0xFFEF4444); // Red
+                            ? const Color(0xFF22C55E)
+                            : const Color(0xFFEF4444);
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),

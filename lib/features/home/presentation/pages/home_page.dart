@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../data/models/device_status_model.dart';
+import '../../../devices/data/models/device_status_model.dart';
+import '../../../devices/presentation/cubit/devices_cubit.dart';
+import '../../../devices/presentation/cubit/devices_state.dart';
+import '../../../devices/presentation/widgets/device_control_sheet.dart';
+import '../../../devices/presentation/widgets/devices_error_view.dart';
+import '../../../devices/presentation/widgets/quick_action_card.dart';
 import '../constants/home_strings.dart';
-import '../cubit/home_cubit.dart';
-import '../cubit/home_state.dart';
-import '../widgets/device_control_sheet.dart';
-import '../widgets/home_error_view.dart';
-import '../widgets/quick_action_card.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.username});
@@ -35,7 +35,7 @@ class HomePage extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: BlocBuilder<HomeCubit, HomeState>(
+        child: BlocBuilder<DevicesCubit, DevicesState>(
           builder: (context, state) {
             if (state.isLoading && state.devices == null) {
               return const _HomeLoadingView();
@@ -43,14 +43,14 @@ class HomePage extends StatelessWidget {
 
             final devices = state.devices;
             if (devices == null) {
-              return HomeErrorView(
+              return DevicesErrorView(
                 message: state.errorMessage ?? HomeStrings.failedToLoadDevices,
-                onRetry: () => context.read<HomeCubit>().loadDevicesStatus(),
+                onRetry: () => context.read<DevicesCubit>().loadDevicesStatus(),
               );
             }
 
             return RefreshIndicator(
-              onRefresh: () => context.read<HomeCubit>().loadDevicesStatus(),
+              onRefresh: () => context.read<DevicesCubit>().loadDevicesStatus(),
               color: colorScheme.primary,
               backgroundColor: tokens.deviceCardSurface,
               child: ListView(
@@ -70,7 +70,7 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       _NotificationButton(
-                        onTap: () => context.read<HomeCubit>().loadDevicesStatus(),
+                        onTap: () => context.read<DevicesCubit>().loadDevicesStatus(),
                       ),
                     ],
                   ),
@@ -187,7 +187,7 @@ class HomePage extends StatelessWidget {
   }
 
   Future<void> _showAlarmControlSheet(BuildContext context) async {
-    final cubit = context.read<HomeCubit>();
+    final cubit = context.read<DevicesCubit>();
 
     await showModalBottomSheet<void>(
       context: context,
@@ -239,7 +239,7 @@ class HomePage extends StatelessWidget {
     required HomeDevicesStatusModel devices,
     required bool showThresholdControl,
   }) {
-    final cubit = context.read<HomeCubit>();
+    final cubit = context.read<DevicesCubit>();
     
     showModalBottomSheet<void>(
       context: context,
@@ -352,7 +352,7 @@ class HomePage extends StatelessWidget {
 
                     Navigator.of(dialogContext).pop();
                     final opened = await rootContext
-                        .read<HomeCubit>()
+                      .read<DevicesCubit>()
                         .openDoor(password: codeController.text);
                     if (!rootContext.mounted) {
                       return;

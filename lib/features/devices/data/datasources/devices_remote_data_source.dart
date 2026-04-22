@@ -4,7 +4,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/network/mqtt_client.dart';
 import '../models/device_status_model.dart';
 
-abstract class HomeRemoteDataSource {
+abstract class DevicesRemoteDataSource {
   Future<HomeDevicesStatusModel> getDevicesStatus();
 
   Future<void> setDevicePower({
@@ -17,8 +17,8 @@ abstract class HomeRemoteDataSource {
   Future<void> setFanTempThreshold({required int value});
 }
 
-class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
-  HomeRemoteDataSourceImpl({
+class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
+  DevicesRemoteDataSourceImpl({
     required ApiClient apiClient,
     required MqttClient mqttClient,
   })  : _apiClient = apiClient,

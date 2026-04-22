@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/home/presentation/cubit/home_cubit.dart';
+import '../../features/devices/presentation/cubit/devices_cubit.dart';
 import '../../features/home/presentation/pages/home_shell_page.dart';
 import '../di/injection_container.dart';
 import 'app_routes.dart';
@@ -33,8 +33,8 @@ class AppRouter {
               ? rawUsername.trim()
               : 'User';
 
-          return BlocProvider<HomeCubit>(
-            create: (_) => getIt<HomeCubit>()..loadDevicesStatus(),
+          return BlocProvider<DevicesCubit>(
+            create: (_) => getIt<DevicesCubit>()..loadDevicesStatus(),
             child: HomeShellPage(username: username),
           );
         },

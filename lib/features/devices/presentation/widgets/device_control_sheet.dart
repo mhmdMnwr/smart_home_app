@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/device_status_model.dart';
-import '../constants/home_strings.dart';
+import '../../../home/presentation/constants/home_strings.dart';
 
 class DeviceControlSheet extends StatelessWidget {
   const DeviceControlSheet({

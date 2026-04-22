@@ -1,17 +1,9 @@
-import '../datasources/home_remote_data_source.dart';
+import '../datasources/devices_remote_data_source.dart';
 import '../models/device_status_model.dart';
 
-abstract class HomeRepository {
+abstract class DevicesRepository {
   Future<HomeDevicesStatusModel> getDevicesStatus();
 
-  /// Set device power via MQTT
-  /// 
-  /// Device types:
-  /// - lamp1, lamp2: setLed endpoint
-  /// - fan1, fan2: setfan endpoint
-  /// - alarm: setAlarm endpoint (can only be turned off)
-  /// 
-  /// Throws AppException if device is offline or command fails
   Future<void> setDevicePower({
     required String deviceKey,
     required bool isOn,
@@ -22,11 +14,11 @@ abstract class HomeRepository {
   Future<void> setFanTempThreshold({required int value});
 }
 
-class HomeRepositoryImpl implements HomeRepository {
-  HomeRepositoryImpl({required HomeRemoteDataSource remoteDataSource})
+class DevicesRepositoryImpl implements DevicesRepository {
+  DevicesRepositoryImpl({required DevicesRemoteDataSource remoteDataSource})
     : _remoteDataSource = remoteDataSource;
 
-  final HomeRemoteDataSource _remoteDataSource;
+  final DevicesRemoteDataSource _remoteDataSource;
 
   @override
   Future<HomeDevicesStatusModel> getDevicesStatus() {

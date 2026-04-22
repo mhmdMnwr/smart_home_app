@@ -6,9 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/auth/data/datasources/auth_remote_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/cubit/login_cubit.dart';
-import '../../features/home/data/datasources/home_remote_data_source.dart';
-import '../../features/home/data/repositories/home_repository.dart';
-import '../../features/home/presentation/cubit/home_cubit.dart';
+import '../../features/devices/data/datasources/devices_remote_data_source.dart';
+import '../../features/devices/data/repositories/devices_repository.dart';
+import '../../features/devices/presentation/cubit/devices_cubit.dart';
+import '../../features/sensors/data/datasources/sensors_remote_data_source.dart';
+import '../../features/sensors/data/repositories/sensors_repository.dart';
+import '../../features/sensors/presentation/cubit/sensors_cubit.dart';
 import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
@@ -68,15 +71,23 @@ Future<void> configureDependencies() async {
       tokenStorage: getIt<TokenStorage>(),
     ),
   );
-  getIt.registerLazySingleton<HomeRemoteDataSource>(
-    () => HomeRemoteDataSourceImpl(
+  getIt.registerLazySingleton<DevicesRemoteDataSource>(
+    () => DevicesRemoteDataSourceImpl(
       apiClient: getIt<ApiClient>(),
       mqttClient: getIt<MqttClient>(),
     ),
   );
-  getIt.registerLazySingleton<HomeRepository>(
-    () => HomeRepositoryImpl(
-      remoteDataSource: getIt<HomeRemoteDataSource>(),
+  getIt.registerLazySingleton<DevicesRepository>(
+    () => DevicesRepositoryImpl(
+      remoteDataSource: getIt<DevicesRemoteDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton<SensorsRemoteDataSource>(
+    () => SensorsRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<SensorsRepository>(
+    () => SensorsRepositoryImpl(
+      remoteDataSource: getIt<SensorsRemoteDataSource>(),
     ),
   );
 
@@ -84,7 +95,10 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<LoginCubit>(
     () => LoginCubit(authRepository: getIt<AuthRepository>()),
   );
-  getIt.registerFactory<HomeCubit>(
-    () => HomeCubit(homeRepository: getIt<HomeRepository>()),
+  getIt.registerFactory<DevicesCubit>(
+    () => DevicesCubit(devicesRepository: getIt<DevicesRepository>()),
+  );
+  getIt.registerFactory<SensorsCubit>(
+    () => SensorsCubit(sensorsRepository: getIt<SensorsRepository>()),
   );
 }

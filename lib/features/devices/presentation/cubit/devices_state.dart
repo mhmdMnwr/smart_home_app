@@ -1,7 +1,7 @@
 import '../../data/models/device_status_model.dart';
 
-class HomeState {
-  const HomeState({
+class DevicesState {
+  const DevicesState({
     this.isLoading = false,
     this.errorMessage,
     this.devices,
@@ -13,12 +13,12 @@ class HomeState {
 
   static const Object _unset = Object();
 
-  HomeState copyWith({
+  DevicesState copyWith({
     bool? isLoading,
     Object? errorMessage = _unset,
     Object? devices = _unset,
   }) {
-    return HomeState(
+    return DevicesState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: identical(errorMessage, _unset)
           ? this.errorMessage
