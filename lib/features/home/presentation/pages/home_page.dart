@@ -9,6 +9,9 @@ import '../../../devices/presentation/cubit/devices_state.dart';
 import '../../../devices/presentation/widgets/device_control_sheet.dart';
 import '../../../devices/presentation/widgets/devices_error_view.dart';
 import '../../../devices/presentation/widgets/quick_action_card.dart';
+import '../../../notifications/presentation/cubit/notifications_cubit.dart';
+import '../../../notifications/presentation/cubit/notifications_state.dart';
+import '../../../notifications/presentation/pages/notifications_page.dart';
 import '../constants/home_strings.dart';
 
 class HomePage extends StatelessWidget {
@@ -69,8 +72,23 @@ class HomePage extends StatelessWidget {
                               ),
                         ),
                       ),
-                      _NotificationButton(
-                        onTap: () => context.read<DevicesCubit>().loadDevicesStatus(),
+                      BlocBuilder<NotificationsCubit, NotificationsState>(
+                        builder: (context, notifState) {
+                          return _NotificationButton(
+                            unreadCount: notifState.unreadCount,
+                            onTap: () {
+                              final cubit = context.read<NotificationsCubit>();
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => BlocProvider<NotificationsCubit>.value(
+                                    value: cubit,
+                                    child: const NotificationsPage(),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -343,7 +361,8 @@ class HomePage extends StatelessWidget {
                 ),
                 FilledButton(
                   onPressed: () async {
-                    if (codeController.text.length != 4) {
+                    final code = codeController.text;
+                    if (code.length != 4) {
                       setState(() {
                         errorMessage = HomeStrings.codeMustBeFourDigits;
                       });
@@ -353,7 +372,7 @@ class HomePage extends StatelessWidget {
                     Navigator.of(dialogContext).pop();
                     final opened = await rootContext
                       .read<DevicesCubit>()
-                        .openDoor(password: codeController.text);
+                        .openDoor(password: code);
                     if (!rootContext.mounted) {
                       return;
                     }
@@ -376,8 +395,6 @@ class HomePage extends StatelessWidget {
         );
       },
     );
-
-    codeController.dispose();
   }
 }
 
@@ -407,9 +424,13 @@ class _HomeLoadingView extends StatelessWidget {
 }
 
 class _NotificationButton extends StatelessWidget {
-  const _NotificationButton({required this.onTap});
+  const _NotificationButton({
+    required this.onTap,
+    this.unreadCount = 0,
+  });
 
   final VoidCallback onTap;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -430,10 +451,42 @@ class _NotificationButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: tokens.notificationBorder),
           ),
-          child: Icon(
-            Icons.notifications_none_rounded,
-            color: colorScheme.onSurface,
-            size: 20,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  color: colorScheme.onSurface,
+                  size: 20,
+                ),
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF5252),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),

@@ -18,7 +18,7 @@ class SensorsStrings {
 
   static const String valueUnitTemp = 'deg C';
   static const String valueUnitHumidity = '%';
-  static const String valueUnitGas = 'ppm';
+  static const String valueUnitGas = '%';
 
   static const String history = 'History';
   static const String noHistory = 'No history available yet.';

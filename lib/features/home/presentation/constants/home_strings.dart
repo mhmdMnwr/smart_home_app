@@ -21,7 +21,7 @@ class HomeStrings {
   static const String alarmNotConnected = 'Alarm not connected yet';
   static const String navHome = 'Home';
   static const String navSensors = 'Sensors';
-  static const String navRobot = 'Robot';
+  static const String navCam = 'Door Cam';
   static const String navLogs = 'Logs';
   static const String navSettings = 'Settings';
 

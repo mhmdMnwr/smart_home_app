@@ -1,21 +1,77 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/config/app_config.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/network/mqtt_live_service.dart';
 import '../../data/repositories/sensors_repository.dart';
 import 'sensors_state.dart';
 
 class SensorsCubit extends Cubit<SensorsState> {
-  SensorsCubit({required SensorsRepository sensorsRepository})
-      : _sensorsRepository = sensorsRepository,
+  SensorsCubit({
+    required SensorsRepository sensorsRepository,
+    required MqttLiveService mqttLiveService,
+  })  : _sensorsRepository = sensorsRepository,
+        _mqttLiveService = mqttLiveService,
         super(const SensorsState());
 
   final SensorsRepository _sensorsRepository;
+  final MqttLiveService _mqttLiveService;
+  StreamSubscription<SensorReading>? _mqttSubscription;
+  bool _initialDataLoaded = false;
 
   static const int _pageLimit = 10;
 
   Future<void> loadInitial() async {
-    await loadHistory(type: SensorType.temperature, page: 1, limit: _pageLimit);
+    _startMqttListening();
+
+    if (_initialDataLoaded) {
+      return;
+    }
+
+    await Future.wait([
+      loadSensorsStatus(),
+      loadHistory(type: SensorType.temperature, page: 1, limit: _pageLimit),
+    ]);
+    _initialDataLoaded = true;
+  }
+
+  /// Fetch online/offline status of dht11 and mq2 from /status/sensors.
+  Future<void> loadSensorsStatus() async {
+    try {
+      final status = await _sensorsRepository.getSensorsStatus();
+      emit(state.copyWith(sensorsStatus: status));
+    } catch (_) {
+      // Non-critical — gauge still works without status.
+    }
+  }
+
+  void _startMqttListening() {
+    _mqttLiveService.connect();
+    _mqttSubscription?.cancel();
+    _mqttSubscription = _mqttLiveService.readings.listen(_onMqttReading);
+  }
+
+  Future<void> disconnectLiveUpdates() async {
+    await _mqttSubscription?.cancel();
+    _mqttSubscription = null;
+    await _mqttLiveService.disconnect();
+  }
+
+  void _onMqttReading(SensorReading reading) {
+    switch (reading.topic) {
+      case AppConfig.mqttTopicTemperature:
+        emit(state.copyWith(liveTemperature: reading.value));
+        break;
+      case AppConfig.mqttTopicHumidity:
+        emit(state.copyWith(liveHumidity: reading.value));
+        break;
+      case AppConfig.mqttTopicGas:
+        emit(state.copyWith(liveGas: reading.value));
+        break;
+    }
   }
 
   Future<void> selectType(SensorType type) async {
@@ -153,5 +209,11 @@ class SensorsCubit extends Cubit<SensorsState> {
       case SensorType.fire:
         return;
     }
+  }
+
+  @override
+  Future<void> close() async {
+    await disconnectLiveUpdates();
+    return super.close();
   }
 }

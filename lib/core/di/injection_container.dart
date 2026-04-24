@@ -10,12 +10,20 @@ import '../../features/devices/data/datasources/devices_remote_data_source.dart'
 import '../../features/devices/data/repositories/devices_repository.dart';
 import '../../features/devices/presentation/cubit/devices_cubit.dart';
 import '../../features/sensors/data/datasources/sensors_remote_data_source.dart';
+import '../../features/notifications/data/datasources/notifications_remote_data_source.dart';
+import '../../features/notifications/data/repositories/notifications_repository.dart';
+import '../../features/notifications/presentation/cubit/notifications_cubit.dart';
 import '../../features/sensors/data/repositories/sensors_repository.dart';
 import '../../features/sensors/presentation/cubit/sensors_cubit.dart';
+import '../../features/settings/data/datasources/settings_remote_data_source.dart';
+import '../../features/settings/data/repositories/settings_repository.dart';
+import '../../features/settings/presentation/cubit/settings_cubit.dart';
 import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
 import '../network/mqtt_client.dart';
+import '../network/mqtt_live_service.dart';
+import '../storage/mqtt_broker_storage.dart';
 import '../storage/token_storage.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -28,6 +36,9 @@ Future<void> configureDependencies() async {
   final sharedPreferences = await SharedPreferences.getInstance();
 
   getIt.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+  getIt.registerLazySingleton<MqttBrokerStorage>(
+    () => MqttBrokerStorage(getIt<SharedPreferences>()),
+  );
   getIt.registerLazySingleton<TokenStorage>(
     () => TokenStorage(getIt<SharedPreferences>()),
   );
@@ -62,6 +73,9 @@ Future<void> configureDependencies() async {
   });
   getIt.registerLazySingleton<ApiClient>(() => ApiClient(dio: getIt<Dio>()));
   getIt.registerLazySingleton<MqttClient>(() => MqttClient(dio: getIt<Dio>()));
+  getIt.registerLazySingleton<MqttLiveService>(
+    () => MqttLiveService(brokerStorage: getIt<MqttBrokerStorage>()),
+  );
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
   );
@@ -90,6 +104,26 @@ Future<void> configureDependencies() async {
       remoteDataSource: getIt<SensorsRemoteDataSource>(),
     ),
   );
+  getIt.registerLazySingleton<SettingsRemoteDataSource>(
+    () => SettingsRemoteDataSourceImpl(
+      apiClient: getIt<ApiClient>(),
+      mqttClient: getIt<MqttClient>(),
+    ),
+  );
+  getIt.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(
+      remoteDataSource: getIt<SettingsRemoteDataSource>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<NotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepositoryImpl(
+      remoteDataSource: getIt<NotificationsRemoteDataSource>(),
+    ),
+  );
 
   // Cubit remains a factory so each provider gets a fresh lifecycle instance.
   getIt.registerFactory<LoginCubit>(
@@ -99,6 +133,21 @@ Future<void> configureDependencies() async {
     () => DevicesCubit(devicesRepository: getIt<DevicesRepository>()),
   );
   getIt.registerFactory<SensorsCubit>(
-    () => SensorsCubit(sensorsRepository: getIt<SensorsRepository>()),
+    () => SensorsCubit(
+      sensorsRepository: getIt<SensorsRepository>(),
+      mqttLiveService: getIt<MqttLiveService>(),
+    ),
+  );
+  getIt.registerFactory<SettingsCubit>(
+    () => SettingsCubit(
+      settingsRepository: getIt<SettingsRepository>(),
+      mqttBrokerStorage: getIt<MqttBrokerStorage>(),
+      mqttLiveService: getIt<MqttLiveService>(),
+    ),
+  );
+  getIt.registerFactory<NotificationsCubit>(
+    () => NotificationsCubit(
+      notificationsRepository: getIt<NotificationsRepository>(),
+    ),
   );
 }

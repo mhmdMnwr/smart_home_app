@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../devices/presentation/cubit/devices_cubit.dart';
-import '../../../devices/presentation/cubit/devices_state.dart';
 import '../../../devices/data/models/device_status_model.dart';
 import '../../data/models/sensor_history_models.dart';
 import '../constants/sensors_strings.dart';
@@ -190,31 +188,26 @@ class _SensorPageBody extends StatelessWidget {
       return _FirePlaceholderCard();
     }
 
-    return BlocBuilder<DevicesCubit, DevicesState>(
-      builder: (context, devicesState) {
-        final devices = devicesState.devices;
-        final sensorStatus = _resolveStatus(type, devices);
-        final unit = _resolveUnit(type);
-        final label = _labelForType(type);
-        final gaugeMax = _gaugeMax(type);
+    final unit = _resolveUnit(type);
+    final label = _labelForType(type);
+    final gaugeMax = _gaugeMax(type);
 
-        // Current value from latest history item
-        return BlocBuilder<SensorsCubit, SensorsState>(
-          builder: (context, sensorsState) {
-            final historyState = sensorsState.historyStateFor(type);
-            final currentValue = historyState.allItems.isNotEmpty
-                ? historyState.allItems.first.value
-                : 0.0;
+    return BlocBuilder<SensorsCubit, SensorsState>(
+      builder: (context, sensorsState) {
+        final historyState = sensorsState.historyStateFor(type);
+        final historyValue = historyState.allItems.isNotEmpty
+            ? historyState.allItems.first.value
+            : 0.0;
+        final currentValue = sensorsState.liveValueFor(type) ?? historyValue;
+        final sensorStatus = _resolveStatus(type, sensorsState);
 
-            return _SensorScrollView(
-              type: type,
-              status: sensorStatus,
-              currentValue: currentValue,
-              unit: unit,
-              label: label,
-              gaugeMax: gaugeMax,
-            );
-          },
+        return _SensorScrollView(
+          type: type,
+          status: sensorStatus,
+          currentValue: currentValue,
+          unit: unit,
+          label: label,
+          gaugeMax: gaugeMax,
         );
       },
     );
@@ -240,7 +233,7 @@ class _SensorPageBody extends StatelessWidget {
       case SensorType.humidity:
         return 100;
       case SensorType.gas:
-        return 1000;
+        return 100;
       case SensorType.fire:
         return 100;
     }
@@ -259,19 +252,15 @@ class _SensorPageBody extends StatelessWidget {
     }
   }
 
-  DeviceStatusModel _resolveStatus(
-    SensorType type,
-    HomeDevicesStatusModel? devices,
-  ) {
-    if (devices == null) {
-      return const DeviceStatusModel.unknown();
-    }
+  DeviceStatusModel _resolveStatus(SensorType type, SensorsState state) {
+    final status = state.sensorsStatus;
+    if (status == null) return const DeviceStatusModel.unknown();
     switch (type) {
       case SensorType.temperature:
       case SensorType.humidity:
-        return devices.dht11;
+        return status.dht11;
       case SensorType.gas:
-        return devices.mq2;
+        return status.mq2;
       case SensorType.fire:
         return const DeviceStatusModel.unknown();
     }

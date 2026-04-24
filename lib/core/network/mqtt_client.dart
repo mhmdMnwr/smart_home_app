@@ -55,6 +55,17 @@ class MqttClient {
     });
   }
 
+  Future<void> changeDoorPassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    final endpoint = '${AppConfig.mqttBasePath}/changePassword';
+    await _sendMqttRequest(endpoint, <String, dynamic>{
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+    });
+  }
+
   Future<void> _sendSetCommand(String endpoint, bool isOn) {
     return _sendMqttRequest(endpoint, <String, dynamic>{
       'set': isOn ? 'on' : 'off',

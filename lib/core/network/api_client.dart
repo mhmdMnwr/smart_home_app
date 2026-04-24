@@ -48,6 +48,46 @@ class ApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> patch({
+    required String path,
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(
+        path,
+        data: body ?? <String, dynamic>{},
+        options: Options(headers: headers),
+      );
+
+      return _decodeAndValidateResponse(response);
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    } on FormatException {
+      throw const AppException(message: 'Invalid response format from server.');
+    }
+  }
+
+  Future<Map<String, dynamic>> delete({
+    required String path,
+    Map<String, dynamic>? body,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        path,
+        data: body,
+        options: Options(headers: headers),
+      );
+
+      return _decodeAndValidateResponse(response);
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    } on FormatException {
+      throw const AppException(message: 'Invalid response format from server.');
+    }
+  }
+
   Map<String, dynamic> _decodeAndValidateResponse(Response<dynamic> response) {
     final decodedBody = ApiResponseParser.decodeBody(response.data);
     ApiResponseParser.validateEnvelope(

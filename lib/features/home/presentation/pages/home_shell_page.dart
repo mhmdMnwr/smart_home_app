@@ -3,8 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../../../sensors/presentation/cubit/sensors_cubit.dart';
 import '../../../sensors/presentation/pages/sensors_page.dart';
+import '../../../settings/presentation/cubit/settings_cubit.dart';
+import '../../../settings/presentation/pages/settings_overview_page.dart';
 import '../constants/home_strings.dart';
 import 'home_page.dart';
 
@@ -19,26 +22,40 @@ class HomeShellPage extends StatefulWidget {
 
 class _HomeShellPageState extends State<HomeShellPage> {
   int _selectedIndex = 0;
+  bool _hasOpenedSensorsTab = false;
+  SensorsCubit? _sensorsCubit;
+  late final NotificationsCubit _notificationsCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsCubit = getIt<NotificationsCubit>()..loadUnreadCount();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppColorTokens>() ??
-        AppColors.darkTokens;
+    final tokens =
+        Theme.of(context).extension<AppColorTokens>() ?? AppColors.darkTokens;
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: <Widget>[
-          HomePage(username: widget.username),
-          BlocProvider<SensorsCubit>(
-            create: (_) => getIt<SensorsCubit>()..loadInitial(),
-            child: const SensorsPage(),
-          ),
-          _EmptyTabPage(tokens: tokens),
-          _EmptyTabPage(tokens: tokens),
-          _EmptyTabPage(tokens: tokens),
-        ],
+      body: BlocProvider<NotificationsCubit>.value(
+        value: _notificationsCubit,
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: <Widget>[
+            HomePage(username: widget.username),
+            _buildSensorsTab(tokens),
+            _EmptyTabPage(tokens: tokens),
+            _EmptyTabPage(tokens: tokens),
+            BlocProvider<SettingsCubit>(
+              create: (_) => getIt<SettingsCubit>()
+                ..loadProfile()
+                ..loadMqttBrokerHost(),
+              child: const SettingsOverviewPage(),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
@@ -81,8 +98,14 @@ class _HomeShellPageState extends State<HomeShellPage> {
                   tokens: tokens,
                   onTap: () {
                     setState(() {
+                      if (index == 1) {
+                        _hasOpenedSensorsTab = true;
+                      }
                       _selectedIndex = index;
                     });
+                    if (index == 1) {
+                      _sensorsCubit?.loadInitial();
+                    }
                   },
                 );
               }),
@@ -91,6 +114,26 @@ class _HomeShellPageState extends State<HomeShellPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildSensorsTab(AppColorTokens tokens) {
+    if (!_hasOpenedSensorsTab) {
+      return _EmptyTabPage(tokens: tokens);
+    }
+
+    _sensorsCubit ??= getIt<SensorsCubit>()..loadInitial();
+
+    return BlocProvider<SensorsCubit>.value(
+      value: _sensorsCubit!,
+      child: const SensorsPage(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sensorsCubit?.close();
+    _notificationsCubit.close();
+    super.dispose();
   }
 }
 
@@ -110,7 +153,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<IconData> _icons = [
     Icons.house_outlined,
     Icons.thermostat_outlined,
-    Icons.precision_manufacturing_outlined,
+    Icons.linked_camera_outlined,
     Icons.library_books_outlined,
     Icons.tune_outlined,
   ];
@@ -118,7 +161,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<IconData> _selectedIcons = [
     Icons.house_rounded,
     Icons.thermostat_rounded,
-    Icons.smart_toy_rounded,
+    Icons.linked_camera_sharp,
     Icons.library_books_rounded,
     Icons.tune_rounded,
   ];
@@ -126,7 +169,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<String> _labels = [
     HomeStrings.navHome,
     HomeStrings.navSensors,
-    HomeStrings.navRobot,
+    HomeStrings.navCam,
     HomeStrings.navLogs,
     HomeStrings.navSettings,
   ];

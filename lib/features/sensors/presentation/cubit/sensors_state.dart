@@ -1,4 +1,5 @@
 import '../../data/models/sensor_history_models.dart';
+import '../../data/models/sensors_status_model.dart';
 
 enum SensorType { temperature, humidity, gas, fire }
 
@@ -56,12 +57,38 @@ class SensorsState {
     this.temperatureState = const SensorHistoryState(),
     this.humidityState = const SensorHistoryState(),
     this.gasState = const SensorHistoryState(),
+    this.liveTemperature,
+    this.liveHumidity,
+    this.liveGas,
+    this.sensorsStatus,
   });
 
   final SensorType selectedType;
   final SensorHistoryState temperatureState;
   final SensorHistoryState humidityState;
   final SensorHistoryState gasState;
+
+  /// Live MQTT values (null = not yet received).
+  final double? liveTemperature;
+  final double? liveHumidity;
+  final double? liveGas;
+
+  /// Online/offline status of dht11 and mq2 from /status/sensors.
+  final SensorsStatusModel? sensorsStatus;
+
+  /// Returns the live value for the given sensor type, or null.
+  double? liveValueFor(SensorType type) {
+    switch (type) {
+      case SensorType.temperature:
+        return liveTemperature;
+      case SensorType.humidity:
+        return liveHumidity;
+      case SensorType.gas:
+        return liveGas;
+      case SensorType.fire:
+        return null;
+    }
+  }
 
   SensorHistoryState historyStateFor(SensorType type) {
     switch (type) {
@@ -81,12 +108,21 @@ class SensorsState {
     SensorHistoryState? temperatureState,
     SensorHistoryState? humidityState,
     SensorHistoryState? gasState,
+    double? liveTemperature,
+    double? liveHumidity,
+    double? liveGas,
+    SensorsStatusModel? sensorsStatus,
   }) {
     return SensorsState(
       selectedType: selectedType ?? this.selectedType,
       temperatureState: temperatureState ?? this.temperatureState,
       humidityState: humidityState ?? this.humidityState,
       gasState: gasState ?? this.gasState,
+      liveTemperature: liveTemperature ?? this.liveTemperature,
+      liveHumidity: liveHumidity ?? this.liveHumidity,
+      liveGas: liveGas ?? this.liveGas,
+      sensorsStatus: sensorsStatus ?? this.sensorsStatus,
     );
   }
 }
+

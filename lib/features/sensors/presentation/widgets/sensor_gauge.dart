@@ -23,13 +23,15 @@ class SensorGauge extends StatelessWidget {
   Widget build(BuildContext context) {
     final clampedValue = value.clamp(min, max);
     final ratio = (clampedValue - min) / (max - min);
+    final isDanger = ratio >= 0.85;
+    final valueColor = isDanger ? const Color(0xFFEF4444) : Colors.white;
 
     return Center(
       child: SizedBox(
         width: 220,
         height: 220,
         child: CustomPaint(
-          painter: _GaugePainter(ratio: ratio),
+          painter: _GaugePainter(ratio: ratio, isDanger: isDanger),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -37,7 +39,9 @@ class SensorGauge extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: isDanger
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.7)
+                        : Colors.white.withValues(alpha: 0.5),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.2,
@@ -46,8 +50,8 @@ class SensorGauge extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   value.toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: valueColor,
                     fontSize: 48,
                     fontWeight: FontWeight.w700,
                     height: 1,
@@ -57,7 +61,9 @@ class SensorGauge extends StatelessWidget {
                 Text(
                   unit,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: isDanger
+                        ? const Color(0xFFEF4444).withValues(alpha: 0.65)
+                        : Colors.white.withValues(alpha: 0.45),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -72,9 +78,10 @@ class SensorGauge extends StatelessWidget {
 }
 
 class _GaugePainter extends CustomPainter {
-  _GaugePainter({required this.ratio});
+  _GaugePainter({required this.ratio, required this.isDanger});
 
   final double ratio;
+  final bool isDanger;
 
   static const double _startAngle = 2.356; // 135° in radians
   static const double _sweepTotal = 4.712; // 270° in radians
@@ -107,8 +114,11 @@ class _GaugePainter extends CustomPainter {
       final gradientPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 10
-        ..strokeCap = StrokeCap.round
-        ..shader = SweepGradient(
+        ..strokeCap = StrokeCap.round;
+      if (isDanger) {
+        gradientPaint.color = const Color(0xFFEF4444);
+      } else {
+        gradientPaint.shader = SweepGradient(
           startAngle: _startAngle,
           endAngle: _startAngle + _sweepTotal,
           colors: const [
@@ -120,13 +130,14 @@ class _GaugePainter extends CustomPainter {
           ],
           stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
         ).createShader(rect);
+      }
       canvas.drawArc(rect, _startAngle, sweepAngle, false, gradientPaint);
 
       // --- Bright dot at the tip ---
       final tipAngle = _startAngle + sweepAngle;
       final tipX = center.dx + radius * math.cos(tipAngle);
       final tipY = center.dy + radius * math.sin(tipAngle);
-      final tipColor = _colorAtRatio(ratio);
+      final tipColor = isDanger ? const Color(0xFFEF4444) : _colorAtRatio(ratio);
 
       // outer glow
       canvas.drawCircle(
@@ -158,5 +169,6 @@ class _GaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _GaugePainter old) => old.ratio != ratio;
+  bool shouldRepaint(covariant _GaugePainter old) =>
+      old.ratio != ratio || old.isDanger != isDanger;
 }

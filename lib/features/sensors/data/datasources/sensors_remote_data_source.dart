@@ -2,6 +2,7 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/sensor_history_models.dart';
+import '../models/sensors_status_model.dart';
 
 abstract class SensorsRemoteDataSource {
   Future<SensorHistoryPage> getHistory({
@@ -9,6 +10,8 @@ abstract class SensorsRemoteDataSource {
     int page = 1,
     int limit = 10,
   });
+
+  Future<SensorsStatusModel> getSensorsStatus();
 }
 
 class SensorsRemoteDataSourceImpl implements SensorsRemoteDataSource {
@@ -49,6 +52,20 @@ class SensorsRemoteDataSourceImpl implements SensorsRemoteDataSource {
 
       return _mapHistoryResponse(fallbackResponse);
     }
+  }
+
+  @override
+  Future<SensorsStatusModel> getSensorsStatus() async {
+    final response = await _apiClient.get(path: AppConfig.sensorsStatusPath);
+
+    final data = response['data'];
+    if (data is! Map<String, dynamic>) {
+      throw const AppException(
+        message: 'Sensors status response has invalid data payload.',
+      );
+    }
+
+    return SensorsStatusModel.fromApi(data);
   }
 
   SensorHistoryPage _mapHistoryResponse(Map<String, dynamic> response) {
