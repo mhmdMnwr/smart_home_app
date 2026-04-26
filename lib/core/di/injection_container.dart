@@ -9,6 +9,9 @@ import '../../features/auth/presentation/cubit/login_cubit.dart';
 import '../../features/devices/data/datasources/devices_remote_data_source.dart';
 import '../../features/devices/data/repositories/devices_repository.dart';
 import '../../features/devices/presentation/cubit/devices_cubit.dart';
+import '../../features/logs/data/datasources/logs_remote_data_source.dart';
+import '../../features/logs/data/repositories/logs_repository.dart';
+import '../../features/logs/presentation/cubit/logs_cubit.dart';
 import '../../features/sensors/data/datasources/sensors_remote_data_source.dart';
 import '../../features/notifications/data/datasources/notifications_remote_data_source.dart';
 import '../../features/notifications/data/repositories/notifications_repository.dart';
@@ -124,6 +127,14 @@ Future<void> configureDependencies() async {
       remoteDataSource: getIt<NotificationsRemoteDataSource>(),
     ),
   );
+  getIt.registerLazySingleton<LogsRemoteDataSource>(
+    () => LogsRemoteDataSourceImpl(apiClient: getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<LogsRepository>(
+    () => LogsRepositoryImpl(
+      remoteDataSource: getIt<LogsRemoteDataSource>(),
+    ),
+  );
 
   // Cubit remains a factory so each provider gets a fresh lifecycle instance.
   getIt.registerFactory<LoginCubit>(
@@ -148,6 +159,11 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<NotificationsCubit>(
     () => NotificationsCubit(
       notificationsRepository: getIt<NotificationsRepository>(),
+    ),
+  );
+  getIt.registerFactory<LogsCubit>(
+    () => LogsCubit(
+      logsRepository: getIt<LogsRepository>(),
     ),
   );
 }

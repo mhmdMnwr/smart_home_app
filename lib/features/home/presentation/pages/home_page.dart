@@ -13,6 +13,7 @@ import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../../../notifications/presentation/cubit/notifications_state.dart';
 import '../../../notifications/presentation/pages/notifications_page.dart';
 import '../constants/home_strings.dart';
+import '../widgets/weather_widget.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.username});
@@ -92,7 +93,10 @@ class HomePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
+                  // ── Weather widget ──
+                  const WeatherWidget(),
+                  const SizedBox(height: 20),
                   Text(
                     HomeStrings.devices,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(

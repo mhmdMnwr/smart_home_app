@@ -3,12 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../logs/presentation/cubit/logs_cubit.dart';
+import '../../../logs/presentation/pages/logs_page.dart';
 import '../../../notifications/presentation/cubit/notifications_cubit.dart';
 import '../../../sensors/presentation/cubit/sensors_cubit.dart';
 import '../../../sensors/presentation/pages/sensors_page.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../../../settings/presentation/pages/settings_overview_page.dart';
 import '../constants/home_strings.dart';
+import '../widgets/voice_command_fab.dart';
 import 'home_page.dart';
 
 class HomeShellPage extends StatefulWidget {
@@ -25,11 +28,13 @@ class _HomeShellPageState extends State<HomeShellPage> {
   bool _hasOpenedSensorsTab = false;
   SensorsCubit? _sensorsCubit;
   late final NotificationsCubit _notificationsCubit;
+  late final LogsCubit _logsCubit;
 
   @override
   void initState() {
     super.initState();
     _notificationsCubit = getIt<NotificationsCubit>()..loadUnreadCount();
+    _logsCubit = getIt<LogsCubit>();
   }
 
   @override
@@ -39,23 +44,35 @@ class _HomeShellPageState extends State<HomeShellPage> {
 
     return Scaffold(
       extendBody: true,
-      body: BlocProvider<NotificationsCubit>.value(
-        value: _notificationsCubit,
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: <Widget>[
-            HomePage(username: widget.username),
-            _buildSensorsTab(tokens),
-            _EmptyTabPage(tokens: tokens),
-            _EmptyTabPage(tokens: tokens),
-            BlocProvider<SettingsCubit>(
-              create: (_) => getIt<SettingsCubit>()
-                ..loadProfile()
-                ..loadMqttBrokerHost(),
-              child: const SettingsOverviewPage(),
+      body: Stack(
+        children: [
+          // Main page content
+          BlocProvider<NotificationsCubit>.value(
+            value: _notificationsCubit,
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: <Widget>[
+                HomePage(username: widget.username),
+                _buildSensorsTab(tokens),
+                _EmptyTabPage(tokens: tokens),
+                BlocProvider<LogsCubit>.value(
+                  value: _logsCubit,
+                  child: const LogsPage(),
+                ),
+                BlocProvider<SettingsCubit>(
+                  create: (_) => getIt<SettingsCubit>()
+                    ..loadProfile()
+                    ..loadMqttBrokerHost(),
+                  child: const SettingsOverviewPage(),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          // Voice command FAB overlay
+          const Positioned.fill(
+            child: VoiceCommandFab(),
+          ),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
@@ -133,6 +150,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
   void dispose() {
     _sensorsCubit?.close();
     _notificationsCubit.close();
+    _logsCubit.close();
     super.dispose();
   }
 }
