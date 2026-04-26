@@ -48,7 +48,7 @@ class MqttClient {
     });
   }
 
-  Future<void> setTempThreshold({required int value}) async {
+  Future<void> setTempThreshold({required double value}) async {
     final endpoint = '${AppConfig.mqttBasePath}/setTempTreshold';
     await _sendMqttRequest(endpoint, <String, dynamic>{
       'value': value,

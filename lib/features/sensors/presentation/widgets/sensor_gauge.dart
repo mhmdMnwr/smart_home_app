@@ -49,7 +49,7 @@ class SensorGauge extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value.toStringAsFixed(0),
+                  value.toStringAsFixed(1),
                   style: TextStyle(
                     color: valueColor,
                     fontSize: 48,

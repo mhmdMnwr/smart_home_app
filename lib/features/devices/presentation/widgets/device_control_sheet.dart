@@ -15,7 +15,7 @@ class DeviceControlSheet extends StatelessWidget {
     required this.secondStatus,
     required this.onToggle,
     this.showThresholdControl = false,
-    this.initialThreshold = 28,
+    this.initialThreshold = 28.0,
     this.onSetThreshold,
   });
 
@@ -28,8 +28,8 @@ class DeviceControlSheet extends StatelessWidget {
   final DeviceStatusModel secondStatus;
   final void Function(String deviceKey, bool isOn) onToggle;
   final bool showThresholdControl;
-  final int initialThreshold;
-  final Future<bool> Function(int value)? onSetThreshold;
+  final double initialThreshold;
+  final Future<bool> Function(double value)? onSetThreshold;
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +81,8 @@ class _FanThresholdControl extends StatefulWidget {
     required this.onSetThreshold,
   });
 
-  final int initialThreshold;
-  final Future<bool> Function(int value)? onSetThreshold;
+  final double initialThreshold;
+  final Future<bool> Function(double value)? onSetThreshold;
 
   @override
   State<_FanThresholdControl> createState() => _FanThresholdControlState();
@@ -108,7 +108,7 @@ class _FanThresholdControlState extends State<_FanThresholdControl> {
   }
 
   Future<void> _submitThreshold() async {
-    final value = int.tryParse(_thresholdController.text.trim());
+    final value = double.tryParse(_thresholdController.text.trim());
     if (value == null) {
       setState(() {
         _errorText = HomeStrings.fanThresholdInvalid;
@@ -170,7 +170,7 @@ class _FanThresholdControlState extends State<_FanThresholdControl> {
                 Expanded(
                   child: TextField(
                     controller: _thresholdController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       hintText: HomeStrings.fanThresholdHint,
                       errorText: _errorText,

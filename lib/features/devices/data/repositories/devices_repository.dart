@@ -11,7 +11,7 @@ abstract class DevicesRepository {
 
   Future<void> openDoor({required String password});
 
-  Future<void> setFanTempThreshold({required int value});
+  Future<void> setFanTempThreshold({required double value});
 }
 
 class DevicesRepositoryImpl implements DevicesRepository {
@@ -42,7 +42,7 @@ class DevicesRepositoryImpl implements DevicesRepository {
   }
 
   @override
-  Future<void> setFanTempThreshold({required int value}) {
+  Future<void> setFanTempThreshold({required double value}) {
     return _remoteDataSource.setFanTempThreshold(value: value);
   }
 }

@@ -108,7 +108,7 @@ class DevicesCubit extends Cubit<DevicesState> {
     }
   }
 
-  Future<bool> setFanTempThreshold({required int value}) async {
+  Future<bool> setFanTempThreshold({required double value}) async {
     if (value < 0 || value > 100) {
       emit(
         state.copyWith(

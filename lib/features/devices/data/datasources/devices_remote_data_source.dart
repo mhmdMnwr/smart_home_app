@@ -14,7 +14,7 @@ abstract class DevicesRemoteDataSource {
 
   Future<void> openDoor({required String password});
 
-  Future<void> setFanTempThreshold({required int value});
+  Future<void> setFanTempThreshold({required double value});
 }
 
 class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
@@ -64,7 +64,7 @@ class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
   }
 
   @override
-  Future<void> setFanTempThreshold({required int value}) {
+  Future<void> setFanTempThreshold({required double value}) {
     return _mqttClient.setTempThreshold(value: value);
   }
 
