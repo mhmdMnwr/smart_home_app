@@ -25,8 +25,9 @@ class RobotStreamService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _remoteStream;
 
-  final ValueNotifier<StreamStatus> status =
-      ValueNotifier(StreamStatus.disconnected);
+  final ValueNotifier<StreamStatus> status = ValueNotifier(
+    StreamStatus.disconnected,
+  );
   final ValueNotifier<String?> errorMessage = ValueNotifier(null);
 
   String _currentUrl = AppConfig.defaultWhepUrl;
