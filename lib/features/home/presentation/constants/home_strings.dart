@@ -13,10 +13,10 @@ class HomeStrings {
   static const String alarm = 'Alarm';
   static const String alarmOn = 'Alarm is on';
   static const String alarmOff = 'Alarm is off';
-  static const String alarmTapToSwitch = 'Tap to switch off';
-  static const String alarmCanSwitchOnlyWhenOn = 'Can switch only when on';
+  static const String alarmTapToToggle = 'Tap to toggle';
   static const String alarmControlTitle = 'Alarm Control';
-  static const String alarmSwitchOff = 'Switch Off Alarm';
+  static const String alarmSwitchOff = 'Switch Off';
+  static const String alarmSwitchOn = 'Switch On';
   static const String openDoor = 'Open Door';
   static const String alarmNotConnected = 'Alarm not connected yet';
   static const String navHome = 'Home';

@@ -30,15 +30,10 @@ class MqttClient {
     await _sendSetCommand(endpoint, isOn);
   }
 
-  /// Set alarm (can only turn off)
+  /// Set alarm power on or off.
   Future<void> setAlarm({required bool isOn}) async {
-    if (isOn) {
-      throw const AppException(
-        message: 'Alarm can only be turned off via app.',
-      );
-    }
     final endpoint = '${AppConfig.mqttBasePath}/setAlarm';
-    await _sendSetCommand(endpoint, false);
+    await _sendSetCommand(endpoint, isOn);
   }
 
   Future<void> openDoor({required String password}) async {

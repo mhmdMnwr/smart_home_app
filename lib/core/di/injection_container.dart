@@ -21,6 +21,7 @@ import '../../features/sensors/presentation/cubit/sensors_cubit.dart';
 import '../../features/settings/data/datasources/settings_remote_data_source.dart';
 import '../../features/settings/data/repositories/settings_repository.dart';
 import '../../features/settings/presentation/cubit/settings_cubit.dart';
+import '../../features/weather/presentation/cubit/weather_cubit.dart';
 import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../network/auth_interceptor.dart';
@@ -154,6 +155,7 @@ Future<void> configureDependencies() async {
       settingsRepository: getIt<SettingsRepository>(),
       mqttBrokerStorage: getIt<MqttBrokerStorage>(),
       mqttLiveService: getIt<MqttLiveService>(),
+      tokenStorage: getIt<TokenStorage>(),
     ),
   );
   getIt.registerFactory<NotificationsCubit>(
@@ -164,6 +166,11 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<LogsCubit>(
     () => LogsCubit(
       logsRepository: getIt<LogsRepository>(),
+    ),
+  );
+  getIt.registerFactory<WeatherCubit>(
+    () => WeatherCubit(
+      mqttLiveService: getIt<MqttLiveService>(),
     ),
   );
 }

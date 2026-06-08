@@ -61,6 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     _cachedUser = user;
+    await _tokenStorage.saveUsername(user.name);
     return user;
   }
 

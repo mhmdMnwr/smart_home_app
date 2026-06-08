@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../../sensors/presentation/cubit/sensors_cubit.dart';
 import '../../../sensors/presentation/pages/sensors_page.dart';
 import '../../../settings/presentation/cubit/settings_cubit.dart';
 import '../../../settings/presentation/pages/settings_overview_page.dart';
+import '../../../robot/presentation/pages/robot_control_page.dart';
 import '../constants/home_strings.dart';
 import '../widgets/voice_command_fab.dart';
 import 'home_page.dart';
@@ -26,15 +28,33 @@ class HomeShellPage extends StatefulWidget {
 class _HomeShellPageState extends State<HomeShellPage> {
   int _selectedIndex = 0;
   bool _hasOpenedSensorsTab = false;
+  bool _hasOpenedRobotTab = false;
   SensorsCubit? _sensorsCubit;
   late final NotificationsCubit _notificationsCubit;
   late final LogsCubit _logsCubit;
+
+  /// Whether the robot tab (index 2) is currently active.
+  bool get _isRobotTab => _selectedIndex == 2;
 
   @override
   void initState() {
     super.initState();
     _notificationsCubit = getIt<NotificationsCubit>()..loadUnreadCount();
     _logsCubit = getIt<LogsCubit>();
+  }
+
+  /// Switches orientation and system UI based on the active tab.
+  void _applyOrientation() {
+    if (_isRobotTab) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
   }
 
   @override
@@ -54,7 +74,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
               children: <Widget>[
                 HomePage(username: widget.username),
                 _buildSensorsTab(tokens),
-                _EmptyTabPage(tokens: tokens),
+                _buildRobotTab(tokens),
                 BlocProvider<LogsCubit>.value(
                   value: _logsCubit,
                   child: const LogsPage(),
@@ -68,68 +88,76 @@ class _HomeShellPageState extends State<HomeShellPage> {
               ],
             ),
           ),
-          // Voice command FAB overlay
-          const Positioned.fill(
-            child: VoiceCommandFab(),
-          ),
+          // Hide FAB on robot tab
+          if (!_isRobotTab)
+            const Positioned.fill(
+              child: VoiceCommandFab(),
+            ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-        child: Container(
-          height: 70,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: <Color>[
-                tokens.navBarSurface.withValues(alpha: 0.95),
-                const Color(0xFF0B1E4E).withValues(alpha: 0.98),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: tokens.navBarIndicator.withValues(alpha: 0.15),
-            ),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: tokens.navBarIndicator.withValues(alpha: 0.08),
-                blurRadius: 30,
-                offset: const Offset(0, 8),
+      // Hide the nav bar entirely on the robot tab
+      bottomNavigationBar: _isRobotTab
+          ? null
+          : SafeArea(
+              minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: Container(
+                height: 70,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: <Color>[
+                      tokens.navBarSurface.withValues(alpha: 0.95),
+                      const Color(0xFF0B1E4E).withValues(alpha: 0.98),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: tokens.navBarIndicator.withValues(alpha: 0.15),
+                  ),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: tokens.navBarIndicator.withValues(alpha: 0.08),
+                      blurRadius: 30,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(5, (index) {
+                      return _NavBarItem(
+                        index: index,
+                        isSelected: _selectedIndex == index,
+                        tokens: tokens,
+                        onTap: () {
+                          setState(() {
+                            if (index == 1) {
+                              _hasOpenedSensorsTab = true;
+                            }
+                            if (index == 2) {
+                              _hasOpenedRobotTab = true;
+                            }
+                            _selectedIndex = index;
+                          });
+                          _applyOrientation();
+                          if (index == 1) {
+                            _sensorsCubit?.loadInitial();
+                          }
+                        },
+                      );
+                    }),
+                  ),
+                ),
               ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(5, (index) {
-                return _NavBarItem(
-                  index: index,
-                  isSelected: _selectedIndex == index,
-                  tokens: tokens,
-                  onTap: () {
-                    setState(() {
-                      if (index == 1) {
-                        _hasOpenedSensorsTab = true;
-                      }
-                      _selectedIndex = index;
-                    });
-                    if (index == 1) {
-                      _sensorsCubit?.loadInitial();
-                    }
-                  },
-                );
-              }),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -145,6 +173,19 @@ class _HomeShellPageState extends State<HomeShellPage> {
       child: const SensorsPage(),
     );
   }
+
+  Widget _buildRobotTab(AppColorTokens tokens) {
+    if (!_hasOpenedRobotTab) {
+      return _EmptyTabPage(tokens: tokens);
+    }
+
+    return RobotControlPage(onExit: () {
+      setState(() => _selectedIndex = 0);
+      _applyOrientation();
+    });
+  }
+
+
 
   @override
   void dispose() {
@@ -171,7 +212,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<IconData> _icons = [
     Icons.house_outlined,
     Icons.thermostat_outlined,
-    Icons.linked_camera_outlined,
+    Icons.smart_toy_outlined,
     Icons.library_books_outlined,
     Icons.tune_outlined,
   ];
@@ -179,7 +220,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<IconData> _selectedIcons = [
     Icons.house_rounded,
     Icons.thermostat_rounded,
-    Icons.linked_camera_sharp,
+    Icons.smart_toy_rounded,
     Icons.library_books_rounded,
     Icons.tune_rounded,
   ];
@@ -187,7 +228,7 @@ class _NavBarItem extends StatelessWidget {
   static const List<String> _labels = [
     HomeStrings.navHome,
     HomeStrings.navSensors,
-    HomeStrings.navCam,
+    'Robot',
     HomeStrings.navLogs,
     HomeStrings.navSettings,
   ];

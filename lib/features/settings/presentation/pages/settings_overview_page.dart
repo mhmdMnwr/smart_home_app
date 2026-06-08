@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/app_routes.dart';
 import '../cubit/settings_cubit.dart';
 import '../cubit/settings_state.dart';
 import '../widgets/door_password_form.dart';
@@ -214,6 +216,16 @@ class SettingsOverviewPage extends StatelessWidget {
                     ],
                   ),
                 ],
+                const SizedBox(height: 24),
+                _LogoutButton(
+                  onLogout: () async {
+                    final confirmed = await _showLogoutConfirmation(context);
+                    if (!confirmed || !context.mounted) return;
+                    await context.read<SettingsCubit>().logout();
+                    if (!context.mounted) return;
+                    context.goNamed(AppRoutes.loginName);
+                  },
+                ),
               ],
             );
           },
@@ -221,5 +233,132 @@ class SettingsOverviewPage extends StatelessWidget {
       ),
     );
   }
+
+  Future<bool> _showLogoutConfirmation(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E2130),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Log Out',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to log out? You will need to re-enter your credentials to sign back in.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Log Out'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
 }
 
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton({required this.onLogout});
+
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+        ),
+        gradient: LinearGradient(
+          colors: <Color>[
+            const Color(0xFFEF4444).withValues(alpha: 0.08),
+            const Color(0xFFEF4444).withValues(alpha: 0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onLogout,
+          borderRadius: BorderRadius.circular(14),
+          splashColor: const Color(0xFFEF4444).withValues(alpha: 0.15),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Log Out',
+                        style: TextStyle(
+                          color: Color(0xFFEF4444),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Sign out of your account',
+                        style: TextStyle(
+                          color: Color(0xFFB0B0B0),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

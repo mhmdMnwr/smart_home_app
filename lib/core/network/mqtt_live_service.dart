@@ -14,24 +14,78 @@ class SensorReading {
   final double value;
 }
 
-/// Singleton service that connects to the MQTT broker and exposes a stream
-/// of [SensorReading]s for the three sensor topics.
+/// Holds live weather data assembled from four individual topics.
+///
+/// All values are percentages (0–100) except [temperature] which is °C.
+class WeatherReading {
+  const WeatherReading({
+    required this.temperature,
+    required this.humidity,
+    required this.light,
+    required this.water,
+    required this.receivedAt,
+  });
+
+  /// Temperature in degrees Celsius.
+  final double temperature;
+
+  /// Humidity percentage (0–100).
+  final double humidity;
+
+  /// Light / brightness percentage (0–100).
+  final double light;
+
+  /// Water / rain percentage (0–100).
+  final double water;
+
+  final DateTime receivedAt;
+
+  WeatherReading copyWith({
+    double? temperature,
+    double? humidity,
+    double? light,
+    double? water,
+    DateTime? receivedAt,
+  }) {
+    return WeatherReading(
+      temperature: temperature ?? this.temperature,
+      humidity: humidity ?? this.humidity,
+      light: light ?? this.light,
+      water: water ?? this.water,
+      receivedAt: receivedAt ?? this.receivedAt,
+    );
+  }
+}
+
+/// Singleton service that connects to the MQTT broker and exposes streams
+/// for both numeric sensor readings and aggregated weather payloads.
 ///
 /// The broker host is read from [MqttBrokerStorage] so it can be changed
 /// at runtime from the Settings page.
 class MqttLiveService {
   MqttLiveService({required MqttBrokerStorage brokerStorage})
-      : _brokerStorage = brokerStorage;
+    : _brokerStorage = brokerStorage;
 
   final MqttBrokerStorage _brokerStorage;
 
   MqttServerClient? _client;
   final StreamController<SensorReading> _controller =
       StreamController<SensorReading>.broadcast();
+  final StreamController<WeatherReading> _weatherController =
+      StreamController<WeatherReading>.broadcast();
   StreamSubscription<List<MqttReceivedMessage<MqttMessage>>>? _subscription;
 
   bool _isConnecting = false;
   bool _disposed = false;
+
+  /// Tracks the latest weather reading assembled from individual topics.
+  WeatherReading _latestWeather = WeatherReading(
+    temperature: 0,
+    humidity: 0,
+    light: 0,
+    water: 0,
+    receivedAt: DateTime.now(),
+  );
 
   /// The list of topics we subscribe to.
   static const List<String> _sensorTopics = [
@@ -40,8 +94,19 @@ class MqttLiveService {
     AppConfig.mqttTopicGas,
   ];
 
+  /// Weather-specific topics (individual values).
+  static const List<String> _weatherTopics = [
+    AppConfig.mqttTopicWeatherWater,
+    AppConfig.mqttTopicWeatherLight,
+    AppConfig.mqttTopicWeatherTemperature,
+    AppConfig.mqttTopicWeatherHumidity,
+  ];
+
   /// Stream of live sensor readings.
   Stream<SensorReading> get readings => _controller.stream;
+
+  /// Stream of live weather payloads.
+  Stream<WeatherReading> get weatherReadings => _weatherController.stream;
 
   /// Whether the client is currently connected.
   bool get isConnected =>
@@ -118,6 +183,9 @@ class MqttLiveService {
     for (final topic in _sensorTopics) {
       client.subscribe(topic, MqttQos.atMostOnce);
     }
+    for (final topic in _weatherTopics) {
+      client.subscribe(topic, MqttQos.atMostOnce);
+    }
   }
 
   void _listenForMessages(MqttServerClient client) {
@@ -137,27 +205,124 @@ class MqttLiveService {
 
       debugPrint('[MQTT] ← $topic : $rawString');
 
+      // ── Handle weather topics ──
+      if (_weatherTopics.contains(topic)) {
+        _handleWeatherTopic(topic, rawString);
+        continue;
+      }
+
+      // ── Handle sensor topics ──
+      final jsonMap = _decodeJsonMap(rawString);
+
       double? value;
-      try {
-        final json = jsonDecode(rawString.trim());
-        if (json is Map<String, dynamic>) {
-          // Try common keys: "value", "temperature", "humidity", "gas"
-          final raw =
-              json['value'] ?? json['temperature'] ?? json['humidity'] ?? json['gas'];
-          value =
-              raw is num ? raw.toDouble() : double.tryParse(raw?.toString() ?? '');
-        } else if (json is num) {
-          value = json.toDouble();
+      if (jsonMap != null) {
+        // Try common keys: "value", "temperature", "humidity", "gas"
+        final raw =
+            jsonMap['value'] ??
+            jsonMap['temperature'] ??
+            jsonMap['humidity'] ??
+            jsonMap['gas'];
+        value = _toDouble(raw);
+      }
+
+      if (value == null) {
+        try {
+          final json = jsonDecode(rawString.trim());
+          if (json is num) {
+            value = json.toDouble();
+          }
+        } catch (_) {
+          // Fallback: try parsing as plain number
+          value = double.tryParse(rawString.trim());
         }
-      } catch (_) {
-        // Fallback: try parsing as plain number
-        value = double.tryParse(rawString.trim());
       }
 
       if (value == null) continue;
 
       _controller.add(SensorReading(topic: topic, value: value));
     }
+  }
+
+  /// Handles an individual weather topic by parsing the numeric value
+  /// and merging it into the latest aggregated [WeatherReading].
+  void _handleWeatherTopic(String topic, String rawString) {
+    final value = _parseNumericPayload(rawString);
+    if (value == null) return;
+
+    final now = DateTime.now();
+
+    switch (topic) {
+      case AppConfig.mqttTopicWeatherTemperature:
+        _latestWeather = _latestWeather.copyWith(
+          temperature: value,
+          receivedAt: now,
+        );
+        break;
+      case AppConfig.mqttTopicWeatherHumidity:
+        _latestWeather = _latestWeather.copyWith(
+          humidity: value.clamp(0, 100),
+          receivedAt: now,
+        );
+        break;
+      case AppConfig.mqttTopicWeatherLight:
+        _latestWeather = _latestWeather.copyWith(
+          light: value.clamp(0, 100),
+          receivedAt: now,
+        );
+        break;
+      case AppConfig.mqttTopicWeatherWater:
+        _latestWeather = _latestWeather.copyWith(
+          water: value.clamp(0, 100),
+          receivedAt: now,
+        );
+        break;
+    }
+
+    _weatherController.add(_latestWeather);
+  }
+
+  /// Parses a raw MQTT string as a single numeric value.
+  /// Supports plain numbers and simple JSON objects with common keys.
+  double? _parseNumericPayload(String rawString) {
+    final trimmed = rawString.trim();
+
+    // Plain number
+    final plain = double.tryParse(trimmed);
+    if (plain != null) return plain;
+
+    // JSON number
+    try {
+      final decoded = jsonDecode(trimmed);
+      if (decoded is num) return decoded.toDouble();
+      if (decoded is Map<String, dynamic>) {
+        final raw =
+            decoded['value'] ??
+            decoded['temperature'] ??
+            decoded['humidity'] ??
+            decoded['light'] ??
+            decoded['water'];
+        return _toDouble(raw);
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  Map<String, dynamic>? _decodeJsonMap(String rawString) {
+    try {
+      final decoded = jsonDecode(rawString.trim());
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Ignore parsing errors and fallback to number parsing for sensor topics.
+    }
+    return null;
+  }
+
+  double? _toDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
   }
 
   // ────────────────────── callbacks ──────────────────────
@@ -216,5 +381,6 @@ class MqttLiveService {
     _disposed = true;
     disconnect();
     _controller.close();
+    _weatherController.close();
   }
 }

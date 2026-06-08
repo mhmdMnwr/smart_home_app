@@ -183,8 +183,8 @@ class HomePage extends StatelessWidget {
                       QuickActionCard(
                         title: HomeStrings.alarm,
                         subtitle: devices.alarm.isOnline
-                            ? HomeStrings.alarmTapToSwitch
-                            : HomeStrings.alarmCanSwitchOnlyWhenOn,
+                            ? '${HomeStrings.alarmOn} · ${HomeStrings.alarmTapToToggle}'
+                            : '${HomeStrings.alarmOff} · ${HomeStrings.alarmTapToToggle}',
                         icon: Icons.warning_amber_rounded,
                         imageAsset: 'assets/images/smart_alarm.png',
                         gradient: const <Color>[
@@ -193,9 +193,7 @@ class HomePage extends StatelessWidget {
                         ],
                         deviceLabels: const <String>[HomeStrings.alarm],
                         deviceStates: <bool>[devices.alarm.isOnline],
-                        onTap: devices.alarm.isOnline
-                            ? () => _showAlarmControlSheet(context)
-                            : null,
+                        onTap: () => _showAlarmControlSheet(context, devices.alarm.isOnline),
                       ),
                     ],
                   ),
@@ -208,7 +206,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Future<void> _showAlarmControlSheet(BuildContext context) async {
+  Future<void> _showAlarmControlSheet(BuildContext context, bool isCurrentlyOn) async {
     final cubit = context.read<DevicesCubit>();
 
     await showModalBottomSheet<void>(
@@ -233,13 +231,77 @@ class HomePage extends StatelessWidget {
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
-                FilledButton(
+                const SizedBox(height: 8),
+                // Current state indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isCurrentlyOn
+                            ? const Color(0xFF4CAF50)
+                            : Colors.redAccent,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isCurrentlyOn
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.redAccent)
+                                .withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isCurrentlyOn
+                          ? HomeStrings.alarmOn
+                          : HomeStrings.alarmOff,
+                      style: Theme.of(sheetContext)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
+                            color: Theme.of(sheetContext)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                // Toggle button — shows the opposite action
+                FilledButton.icon(
                   onPressed: () {
-                    cubit.setDevicePower(deviceKey: 'alarm', isOn: false);
+                    cubit.setDevicePower(
+                      deviceKey: 'alarm',
+                      isOn: !isCurrentlyOn,
+                    );
                     Navigator.of(sheetContext).pop();
                   },
-                  child: const Text(HomeStrings.alarmSwitchOff),
+                  icon: Icon(
+                    isCurrentlyOn
+                        ? Icons.alarm_off_rounded
+                        : Icons.alarm_on_rounded,
+                  ),
+                  label: Text(
+                    isCurrentlyOn
+                        ? HomeStrings.alarmSwitchOff
+                        : HomeStrings.alarmSwitchOn,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isCurrentlyOn
+                        ? const Color(0xFFD32F2F)
+                        : const Color(0xFF388E3C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),

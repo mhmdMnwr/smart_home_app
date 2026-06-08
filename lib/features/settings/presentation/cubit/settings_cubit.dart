@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/network/mqtt_live_service.dart';
+import '../../../../core/storage/token_storage.dart';
 import '../../../../core/storage/mqtt_broker_storage.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../data/models/create_user_request_model.dart';
@@ -15,14 +16,17 @@ class SettingsCubit extends Cubit<SettingsState> {
     required SettingsRepository settingsRepository,
     required MqttBrokerStorage mqttBrokerStorage,
     required MqttLiveService mqttLiveService,
+    required TokenStorage tokenStorage,
   })  : _settingsRepository = settingsRepository,
         _mqttBrokerStorage = mqttBrokerStorage,
         _mqttLiveService = mqttLiveService,
+        _tokenStorage = tokenStorage,
         super(const SettingsState());
 
   final SettingsRepository _settingsRepository;
   final MqttBrokerStorage _mqttBrokerStorage;
   final MqttLiveService _mqttLiveService;
+  final TokenStorage _tokenStorage;
 
   void loadMqttBrokerHost() {
     final host = _mqttBrokerStorage.getHost();
@@ -359,5 +363,9 @@ class SettingsCubit extends Cubit<SettingsState> {
 
   void clearMessages() {
     emit(state.copyWith(errorMessage: null, successMessage: null));
+  }
+
+  Future<void> logout() async {
+    await _tokenStorage.clear();
   }
 }

@@ -50,26 +50,8 @@ class DevicesCubit extends Cubit<DevicesState> {
       return;
     }
 
-    final device = currentDevices.deviceByKey(deviceKey);
-    if (deviceKey == 'alarm') {
-      if (!device.isOnline) {
-        emit(
-          state.copyWith(
-            errorMessage: 'Alarm is already off. You can switch only when it is on.',
-          ),
-        );
-        return;
-      }
 
-      if (isOn) {
-        emit(
-          state.copyWith(
-            errorMessage: 'Alarm can only be switched off via the app.',
-          ),
-        );
-        return;
-      }
-    }
+
 
     final optimisticDevices = currentDevices.updateDeviceStatus(
       deviceKey: deviceKey,
