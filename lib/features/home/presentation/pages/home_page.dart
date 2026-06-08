@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -170,15 +169,19 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                       QuickActionCard(
-                        title: HomeStrings.openDoor,
-                        subtitle: HomeStrings.enterDoorCode,
+                        title: HomeStrings.door,
+                        subtitle: devices.door.isOnline
+                            ? '${HomeStrings.doorOpen} · ${HomeStrings.doorTapToToggle}'
+                            : '${HomeStrings.doorClosed} · ${HomeStrings.doorTapToToggle}',
                         icon: Icons.lock_open_rounded,
                         imageAsset: 'assets/images/smart_lock.png',
                         gradient: const <Color>[
                           Color(0xFF2B6EFF),
                           Color(0xFF5E8FFF),
                         ],
-                        onTap: () => _showDoorCodeDialog(context),
+                        deviceLabels: const <String>[HomeStrings.door],
+                        deviceStates: <bool>[devices.door.isOnline],
+                        onTap: () => _showDoorControlSheet(context, devices.door.isOnline),
                       ),
                       QuickActionCard(
                         title: HomeStrings.alarm,
@@ -204,6 +207,131 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showDoorControlSheet(BuildContext context, bool isCurrentlyOpen) async {
+    final cubit = context.read<DevicesCubit>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  HomeStrings.doorControlTitle,
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                // Current state indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isCurrentlyOpen
+                            ? const Color(0xFF4CAF50)
+                            : Colors.redAccent,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isCurrentlyOpen
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.redAccent)
+                                .withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isCurrentlyOpen
+                          ? HomeStrings.doorOpen
+                          : HomeStrings.doorClosed,
+                      style: Theme.of(sheetContext)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
+                            color: Theme.of(sheetContext)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          cubit.setDevicePower(
+                            deviceKey: 'door',
+                            isOn: true,
+                          );
+                          Navigator.of(sheetContext).pop();
+                        },
+                        icon: const Icon(Icons.lock_open_rounded),
+                        label: const Text(HomeStrings.doorSwitchOpen),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF388E3C),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          cubit.setDevicePower(
+                            deviceKey: 'door',
+                            isOn: false,
+                          );
+                          Navigator.of(sheetContext).pop();
+                        },
+                        icon: const Icon(Icons.lock_rounded),
+                        label: const Text(HomeStrings.doorSwitchClose),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFD32F2F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          textStyle: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    cubit.loadDevicesStatus();
   }
 
   Future<void> _showAlarmControlSheet(BuildContext context, bool isCurrentlyOn) async {
@@ -359,108 +487,6 @@ class HomePage extends StatelessWidget {
     }).catchError((_) {
       // Ignore errors
     });
-  }
-
-  Future<void> _showDoorCodeDialog(BuildContext context) async {
-    final rootContext = context;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final tokens = Theme.of(context).extension<AppColorTokens>() ??
-        AppColors.darkTokens;
-    final TextEditingController codeController = TextEditingController();
-    String? errorMessage;
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: tokens.dialogSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Text(
-                HomeStrings.enterDoorCode,
-                style: TextStyle(color: colorScheme.onSurface),
-              ),
-              content: TextField(
-                controller: codeController,
-                autofocus: true,
-                maxLength: 4,
-                keyboardType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(4),
-                ],
-                onChanged: (_) {
-                  if (errorMessage == null) {
-                    return;
-                  }
-
-                  setState(() {
-                    errorMessage = null;
-                  });
-                },
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  letterSpacing: 6,
-                  fontWeight: FontWeight.w700,
-                ),
-                decoration: InputDecoration(
-                  hintText: HomeStrings.doorCodeHint,
-                  counterText: '',
-                  filled: true,
-                  fillColor: colorScheme.surface.withValues(alpha: 0.44),
-                  hintStyle: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  errorText: errorMessage,
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(
-                    HomeStrings.cancel,
-                    style: TextStyle(color: colorScheme.onSurfaceVariant),
-                  ),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    final code = codeController.text;
-                    if (code.length != 4) {
-                      setState(() {
-                        errorMessage = HomeStrings.codeMustBeFourDigits;
-                      });
-                      return;
-                    }
-
-                    Navigator.of(dialogContext).pop();
-                    final opened = await rootContext
-                      .read<DevicesCubit>()
-                        .openDoor(password: code);
-                    if (!rootContext.mounted) {
-                      return;
-                    }
-
-                    ScaffoldMessenger.of(rootContext).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          opened
-                              ? HomeStrings.doorOpened
-                              : HomeStrings.doorOpenFailed,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Text(HomeStrings.unlock),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
   }
 }
 

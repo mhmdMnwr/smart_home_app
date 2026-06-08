@@ -89,10 +89,10 @@ class _HomeShellPageState extends State<HomeShellPage> {
             ),
           ),
           // Hide FAB on robot tab
-          if (!_isRobotTab)
-            const Positioned.fill(
-              child: VoiceCommandFab(),
-            ),
+          // if (!_isRobotTab)
+          //   const Positioned.fill(
+          //     child: VoiceCommandFab(),
+          //   ),
         ],
       ),
       // Hide the nav bar entirely on the robot tab

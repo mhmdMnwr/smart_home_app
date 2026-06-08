@@ -14,6 +14,10 @@ abstract class SettingsRepository {
     required String oldPassword,
     required String newPassword,
   });
+  Future<FamilyMemberModel> assignTag({
+    required String userId,
+    required String cardTag,
+  });
 }
 
 class SettingsRepositoryImpl implements SettingsRepository {
@@ -55,6 +59,17 @@ class SettingsRepositoryImpl implements SettingsRepository {
     return _remoteDataSource.changeDoorPassword(
       oldPassword: oldPassword,
       newPassword: newPassword,
+    );
+  }
+
+  @override
+  Future<FamilyMemberModel> assignTag({
+    required String userId,
+    required String cardTag,
+  }) {
+    return _remoteDataSource.assignTag(
+      userId: userId,
+      cardTag: cardTag,
     );
   }
 }

@@ -44,6 +44,7 @@ dependencies:
   mqtt_client: ^10.11.11
   flutter_webrtc: ^0.12.12
   http: ^1.4.0
+  nfc_manager: ^4.2.1
 
 dev_dependencies:
   flutter_test:

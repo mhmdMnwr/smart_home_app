@@ -9,8 +9,6 @@ abstract class DevicesRepository {
     required bool isOn,
   });
 
-  Future<void> openDoor({required String password});
-
   Future<void> setFanTempThreshold({required double value});
 }
 
@@ -34,11 +32,6 @@ class DevicesRepositoryImpl implements DevicesRepository {
       deviceKey: deviceKey,
       isOn: isOn,
     );
-  }
-
-  @override
-  Future<void> openDoor({required String password}) {
-    return _remoteDataSource.openDoor(password: password);
   }
 
   @override

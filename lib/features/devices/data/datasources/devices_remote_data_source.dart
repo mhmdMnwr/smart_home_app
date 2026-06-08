@@ -12,8 +12,6 @@ abstract class DevicesRemoteDataSource {
     required bool isOn,
   });
 
-  Future<void> openDoor({required String password});
-
   Future<void> setFanTempThreshold({required double value});
 }
 
@@ -53,14 +51,11 @@ class DevicesRemoteDataSourceImpl implements DevicesRemoteDataSource {
         );
       case 'alarm':
         return _mqttClient.setAlarm(isOn: isOn);
+      case 'door':
+        return _mqttClient.setDoor(isOn: isOn);
       default:
         throw AppException(message: 'Unknown device: $deviceKey');
     }
-  }
-
-  @override
-  Future<void> openDoor({required String password}) {
-    return _mqttClient.openDoor(password: password);
   }
 
   @override

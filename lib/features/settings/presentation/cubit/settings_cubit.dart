@@ -361,6 +361,50 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
   }
 
+  Future<bool> assignTag({
+    required String userId,
+    required String cardTag,
+  }) async {
+    emit(
+      state.copyWith(
+        isAssigningTag: true,
+        errorMessage: null,
+        successMessage: null,
+      ),
+    );
+
+    try {
+      await _settingsRepository.assignTag(
+        userId: userId,
+        cardTag: cardTag,
+      );
+      emit(
+        state.copyWith(
+          isAssigningTag: false,
+          successMessage: 'Card tag assigned successfully.',
+        ),
+      );
+      await loadFamilyMembers();
+      return true;
+    } on AppException catch (error) {
+      emit(
+        state.copyWith(
+          isAssigningTag: false,
+          errorMessage: error.message,
+        ),
+      );
+      return false;
+    } catch (_) {
+      emit(
+        state.copyWith(
+          isAssigningTag: false,
+          errorMessage: AppStrings.genericError,
+        ),
+      );
+      return false;
+    }
+  }
+
   void clearMessages() {
     emit(state.copyWith(errorMessage: null, successMessage: null));
   }

@@ -8,6 +8,7 @@ class SettingsState {
     this.isSavingProfile = false,
     this.isCreatingUser = false,
     this.isChangingDoorPassword = false,
+    this.isAssigningTag = false,
     this.familyMembers = const <FamilyMemberModel>[],
     this.isLoadingFamilyMembers = false,
     this.deletingUserId,
@@ -22,6 +23,7 @@ class SettingsState {
   final bool isSavingProfile;
   final bool isCreatingUser;
   final bool isChangingDoorPassword;
+  final bool isAssigningTag;
   final List<FamilyMemberModel> familyMembers;
   final bool isLoadingFamilyMembers;
   final String? deletingUserId;
@@ -40,6 +42,7 @@ class SettingsState {
     bool? isSavingProfile,
     bool? isCreatingUser,
     bool? isChangingDoorPassword,
+    bool? isAssigningTag,
     List<FamilyMemberModel>? familyMembers,
     bool? isLoadingFamilyMembers,
     Object? deletingUserId = _unset,
@@ -57,6 +60,7 @@ class SettingsState {
       isCreatingUser: isCreatingUser ?? this.isCreatingUser,
       isChangingDoorPassword:
           isChangingDoorPassword ?? this.isChangingDoorPassword,
+      isAssigningTag: isAssigningTag ?? this.isAssigningTag,
       familyMembers: familyMembers ?? this.familyMembers,
       isLoadingFamilyMembers:
           isLoadingFamilyMembers ?? this.isLoadingFamilyMembers,

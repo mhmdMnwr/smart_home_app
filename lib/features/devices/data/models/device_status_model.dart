@@ -7,6 +7,7 @@ class HomeDevicesStatusModel {
     this.dht11 = const DeviceStatusModel.unknown(),
     this.mq2 = const DeviceStatusModel.unknown(),
     this.alarm = const DeviceStatusModel.unknown(),
+    this.door = const DeviceStatusModel.unknown(),
   });
 
   final DeviceStatusModel lamp1;
@@ -16,6 +17,7 @@ class HomeDevicesStatusModel {
   final DeviceStatusModel dht11;
   final DeviceStatusModel mq2;
   final DeviceStatusModel alarm;
+  final DeviceStatusModel door;
 
   factory HomeDevicesStatusModel.fromApi(Map<String, dynamic> data) {
     return HomeDevicesStatusModel(
@@ -30,13 +32,17 @@ class HomeDevicesStatusModel {
       alarm: DeviceStatusModel.fromApi(
         data['alarm'] ?? data['alram'] ?? data['setAlarm'],
       ),
+      door: DeviceStatusModel.fromApi(
+        data['door'] ?? data['opendoor'] ?? data['openDoor'],
+      ),
     );
   }
 
   String get lightsSummary =>
       'L1 ${lamp1.displayStatus} • L2 ${lamp2.displayStatus}';
 
-  String get fansSummary => 'F1 ${fan1.displayStatus} • F2 ${fan2.displayStatus}';
+  String get fansSummary =>
+      'F1 ${fan1.displayStatus} • F2 ${fan2.displayStatus}';
 
   HomeDevicesStatusModel copyWith({
     DeviceStatusModel? lamp1,
@@ -46,6 +52,7 @@ class HomeDevicesStatusModel {
     DeviceStatusModel? dht11,
     DeviceStatusModel? mq2,
     DeviceStatusModel? alarm,
+    DeviceStatusModel? door,
   }) {
     return HomeDevicesStatusModel(
       lamp1: lamp1 ?? this.lamp1,
@@ -55,6 +62,7 @@ class HomeDevicesStatusModel {
       dht11: dht11 ?? this.dht11,
       mq2: mq2 ?? this.mq2,
       alarm: alarm ?? this.alarm,
+      door: door ?? this.door,
     );
   }
 
@@ -74,6 +82,8 @@ class HomeDevicesStatusModel {
         return mq2;
       case 'alarm':
         return alarm;
+      case 'door':
+        return door;
       default:
         return const DeviceStatusModel.unknown();
     }
@@ -96,6 +106,8 @@ class HomeDevicesStatusModel {
         return copyWith(fan2: nextStatus);
       case 'alarm':
         return copyWith(alarm: nextStatus);
+      case 'door':
+        return copyWith(door: nextStatus);
       default:
         return this;
     }
@@ -128,11 +140,15 @@ class DeviceStatusModel {
   factory DeviceStatusModel.fromApi(dynamic value) {
     if (value is String) {
       final normalized = value.trim().toLowerCase();
-      if (normalized == 'online' || normalized == 'on' || normalized == 'true') {
+      if (normalized == 'online' ||
+          normalized == 'on' ||
+          normalized == 'true') {
         return DeviceStatusModel(status: 'online', updatedAt: null);
       }
 
-      if (normalized == 'offline' || normalized == 'off' || normalized == 'false') {
+      if (normalized == 'offline' ||
+          normalized == 'off' ||
+          normalized == 'false') {
         return DeviceStatusModel(status: 'offline', updatedAt: null);
       }
     }

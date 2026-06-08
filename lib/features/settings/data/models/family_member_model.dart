@@ -7,6 +7,7 @@ class FamilyMemberModel {
     required this.email,
     required this.phoneNumber,
     required this.role,
+    this.cardTag,
   });
 
   final String id;
@@ -14,6 +15,7 @@ class FamilyMemberModel {
   final String email;
   final String phoneNumber;
   final UserRole role;
+  final String? cardTag;
 
   factory FamilyMemberModel.fromJson(Map<String, dynamic> json) {
     final id = (json['id'] ?? json['_id'] ?? json['userId'] ?? '')
@@ -27,7 +29,7 @@ class FamilyMemberModel {
       email: (json['email'] ?? '').toString(),
       phoneNumber: (json['phoneNumber'] ?? json['phone_number'] ?? '').toString(),
       role: roleRaw == 'admin' ? UserRole.admin : UserRole.user,
+      cardTag: json['cardTag']?.toString(),
     );
   }
 }
-

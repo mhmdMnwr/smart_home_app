@@ -22,10 +22,7 @@ class MqttClient {
   }
 
   /// Set fan power (fan1 or fan2)
-  Future<void> setFanPower({
-    required String fanId,
-    required bool isOn,
-  }) async {
+  Future<void> setFanPower({required String fanId, required bool isOn}) async {
     final endpoint = '${AppConfig.mqttBasePath}/setfan/$fanId';
     await _sendSetCommand(endpoint, isOn);
   }
@@ -36,18 +33,15 @@ class MqttClient {
     await _sendSetCommand(endpoint, isOn);
   }
 
-  Future<void> openDoor({required String password}) async {
-    final endpoint = '${AppConfig.mqttBasePath}/opendoor';
-    await _sendMqttRequest(endpoint, <String, dynamic>{
-      'password': password,
-    });
+  /// Set door open or closed.
+  Future<void> setDoor({required bool isOn}) async {
+    final endpoint = '${AppConfig.mqttBasePath}/setDoor';
+    await _sendSetCommand(endpoint, isOn);
   }
 
   Future<void> setTempThreshold({required double value}) async {
     final endpoint = '${AppConfig.mqttBasePath}/setTempTreshold';
-    await _sendMqttRequest(endpoint, <String, dynamic>{
-      'value': value,
-    });
+    await _sendMqttRequest(endpoint, <String, dynamic>{'value': value});
   }
 
   Future<void> changeDoorPassword({
@@ -75,9 +69,7 @@ class MqttClient {
       final response = await _dio.post<dynamic>(
         endpoint,
         data: body,
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       final responseBody = ApiResponseParser.decodeBody(response.data);
@@ -100,14 +92,17 @@ class MqttClient {
     if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.sendTimeout ||
         error.type == DioExceptionType.receiveTimeout) {
-      return const NetworkException('MQTT command timed out. Device may be offline.');
+      return const NetworkException(
+        'MQTT command timed out. Device may be offline.',
+      );
     }
 
     final response = error.response;
     if (response != null) {
       final responseBody = ApiResponseParser.decodeBody(response.data);
       return ServerException(
-        message: ApiResponseParser.extractMessage(responseBody) ??
+        message:
+            ApiResponseParser.extractMessage(responseBody) ??
             'Failed to control device. Status: ${response.statusCode}',
         statusCode: response.statusCode,
       );

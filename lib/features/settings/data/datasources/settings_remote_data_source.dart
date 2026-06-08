@@ -17,6 +17,10 @@ abstract class SettingsRemoteDataSource {
     required String oldPassword,
     required String newPassword,
   });
+  Future<FamilyMemberModel> assignTag({
+    required String userId,
+    required String cardTag,
+  });
 }
 
 class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
@@ -87,6 +91,36 @@ class SettingsRemoteDataSourceImpl implements SettingsRemoteDataSource {
       oldPassword: oldPassword,
       newPassword: newPassword,
     );
+  }
+
+  @override
+  Future<FamilyMemberModel> assignTag({
+    required String userId,
+    required String cardTag,
+  }) async {
+    final response = await _apiClient.post(
+      path: AppConfig.assignTagPath,
+      body: <String, dynamic>{
+        'userId': userId,
+        'cardTag': cardTag,
+      },
+    );
+
+    final user = response['user'];
+    if (user is Map<String, dynamic>) {
+      return FamilyMemberModel.fromJson(user);
+    }
+
+    // Fallback: check nested data
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      final nestedUser = data['user'];
+      if (nestedUser is Map<String, dynamic>) {
+        return FamilyMemberModel.fromJson(nestedUser);
+      }
+    }
+
+    throw const AppException(message: 'Invalid assign-tag response.');
   }
 
   UserModel _extractUser(Map<String, dynamic> response) {

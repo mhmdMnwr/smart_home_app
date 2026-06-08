@@ -50,9 +50,6 @@ class DevicesCubit extends Cubit<DevicesState> {
       return;
     }
 
-
-
-
     final optimisticDevices = currentDevices.updateDeviceStatus(
       deviceKey: deviceKey,
       isOn: isOn,
@@ -68,26 +65,6 @@ class DevicesCubit extends Cubit<DevicesState> {
       deviceKey: deviceKey,
       isOn: isOn,
     );
-  }
-
-  Future<bool> openDoor({required String password}) async {
-    final normalizedPassword = password.trim();
-    if (normalizedPassword.isEmpty) {
-      emit(state.copyWith(errorMessage: 'Door password is required.'));
-      return false;
-    }
-
-    try {
-      await _devicesRepository.openDoor(password: normalizedPassword);
-      emit(state.copyWith(errorMessage: null));
-      return true;
-    } on AppException catch (error) {
-      emit(state.copyWith(errorMessage: error.message));
-      return false;
-    } catch (_) {
-      emit(state.copyWith(errorMessage: AppStrings.genericError));
-      return false;
-    }
   }
 
   Future<bool> setFanTempThreshold({required double value}) async {

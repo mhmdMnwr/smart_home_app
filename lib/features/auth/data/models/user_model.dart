@@ -11,6 +11,7 @@ class UserModel {
     required this.email,
     required this.phoneNumber,
     required this.role,
+    this.cardTag,
   });
 
   @JsonKey(defaultValue: '')
@@ -24,6 +25,9 @@ class UserModel {
 
   @JsonKey(fromJson: _roleFromJson, toJson: _roleToJson)
   final UserRole role;
+
+  @JsonKey(name: 'cardTag')
+  final String? cardTag;
 
   bool get isValid => name.isNotEmpty && email.isNotEmpty;
 
